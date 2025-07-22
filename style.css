@@ -181,6 +181,19 @@ button:disabled {
     background-color: #000;
 }
 
+.debug-info {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #222;
+    border-radius: 5px;
+    font-size: 0.9em;
+    color: #4CAF50;
+    border: 1px solid #333;
+}
+
 .audio-status {
     display: flex;
     justify-content: center;
