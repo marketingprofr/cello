@@ -1,8 +1,13 @@
-# 🎻 Cello Rhythm Game - Ave Maria v2.3.1
+# 🎻 Cello Rhythm Game - Ave Maria v2.3.2
 
 Un jeu de rythme musical interactif pour violoncelle basé sur l'Ave Maria de Gounod. Le jeu détecte les notes jouées en temps réel via le microphone et évalue la précision du joueur.
 
-**Version actuelle : v2.3.1** - CORRECTIF CACHE - Éléments manquants corrigés
+**Version actuelle : v2.3.2** - CORRECTIF SYNTAXE - Erreur JavaScript corrigée
+
+## 🚨 Correctif v2.3.2
+- **🔧 CORRECTIF SYNTAXE** : Erreur JavaScript "Unexpected identifier 'info'" corrigée
+- **✅ Code nettoyé** : Toutes les fonctions vérifiées et reformatées
+- **🎯 Fonctionnement garanti** : Plus d'erreur de syntaxe
 
 ## 🚨 Correctif v2.3.1
 - **🔧 CORRECTIF CACHE** : Problème "playedOctave manquant" résolu
@@ -104,6 +109,7 @@ cello-rhythm-game/
 ```
 
 ### Historique des versions
+- **v2.3.2** : 🔧 CORRECTIF SYNTAXE - Erreur JavaScript "Unexpected identifier" corrigée
 - **v2.3.1** : 🔧 CORRECTIF CACHE - Erreur "playedOctave manquant" corrigée
 - **v2.3** : 🎤 Mode accordage permanent + affichage amélioré (Do3 + Hz)
 - **v2.2.1** : 🚨 CORRECTIF URGENT - Fonctions manquantes corrigées
@@ -183,12 +189,18 @@ Dans `script.js`, méthode `detectPitch()` :
 
 ## 🐛 Résolution de problèmes
 
+### ❌ "Unexpected identifier 'info'" ou autres erreurs JavaScript
+- **SOLUTION** : Rechargez complètement avec **Ctrl+F5**
+- **CORRIGÉ en v2.3.2** : Problèmes de syntaxe JavaScript résolus
+- **Vérification** : Console ne doit plus afficher d'erreurs de syntaxe
+- **Alternative** : Si problème persiste, videz le cache complet du navigateur
+
 ### 🔄 Script affiche une ancienne version (v2.2, etc.)
 - **SOLUTION** : Faites un **Ctrl+F5** (rechargement forcé) 
 - **Cause** : Cache du navigateur avec ancienne version
-- **Vérification** : Dans la zone debug, vous devez voir "VERSION: v2.3.1"
+- **Vérification** : Dans la zone debug, vous devez voir "VERSION: v2.3.2"
 - **Alternative** : Videz le cache du navigateur
-- **Console** : Message rouge "🔧 SI VOUS VOYEZ v2.2 = FAITES Ctrl+F5"
+- **Console** : Message vert "✅ ERREUR JAVASCRIPT CORRIGÉE"
 
 ### ❌ "Element missing: playedOctave"
 - **SOLUTION** : Rechargez complètement avec **Ctrl+F5**
@@ -208,7 +220,7 @@ Dans `script.js`, méthode `detectPitch()` :
 
 ### ❌ "TypeError: this.drawLedgerLines is not a function"
 - ✅ **CORRIGÉ en v2.2.1** - Ce bug critique est résolu
-- Si vous voyez encore cette erreur, vérifiez que vous avez bien v2.3.1
+- Si vous voyez encore cette erreur, vérifiez que vous avez bien v2.3.2
 
 ### Le microphone ne fonctionne pas
 - Vérifiez les permissions du navigateur
@@ -237,10 +249,11 @@ Dans `script.js`, méthode `detectPitch()` :
 ### Comment s'assurer d'avoir la bonne version :
 
 1. **Rechargez avec Ctrl+F5** (rechargement forcé)
-2. **Vérifiez la version** dans le titre : doit afficher "v2.3.1"  
-3. **Zone debug** : doit afficher "VERSION: v2.3.1" en rouge
-4. **Console** (F12) : doit afficher en vert "🎻 CELLO RHYTHM GAME v2.3.1"
+2. **Vérifiez la version** dans le titre : doit afficher "v2.3.2"  
+3. **Zone debug** : doit afficher "VERSION: v2.3.2" en rouge
+4. **Console** (F12) : doit afficher en vert "🎻 CELLO RHYTHM GAME v2.3.2"
 5. **Boutons** : "🎤 Activer Microphone" (vert) + "Commencer le jeu" (bleu)
+6. **Pas d'erreur** : Plus de "Unexpected identifier 'info'" dans la console
 
 ## 📄 Licence
 
