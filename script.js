@@ -3,17 +3,17 @@
     'use strict';
     
     // ═══════════════════════════════════════
-    // 🎻 CELLO RHYTHM GAME v2.3.2
-    // CORRECTIF SYNTAXE: 22/07/2025
+    // 🎻 CELLO RHYTHM GAME v2.3.3
+    // CORRECTIF URGENT: 22/07/2025
     // ═══════════════════════════════════════
     
-    const GAME_VERSION = "v2.3.2";
+    const GAME_VERSION = "v2.3.3";
     
     // VÉRIFICATION IMMÉDIATE DE LA VERSION
     console.log('%c═══════════════════════════════════════', 'color: #4CAF50; font-weight: bold;');
-    console.log('%c🎻 CELLO RHYTHM GAME v2.3.2', 'color: #4CAF50; font-size: 16px; font-weight: bold;');
-    console.log('%c📅 BUILD: 22/07/2025 - CORRECTIF SYNTAXE', 'color: #4CAF50; font-weight: bold;');
-    console.log('%c✅ ERREUR JAVASCRIPT CORRIGÉE', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
+    console.log('%c🎻 CELLO RHYTHM GAME v2.3.3', 'color: #4CAF50; font-size: 16px; font-weight: bold;');
+    console.log('%c📅 BUILD: 22/07/2025 - CORRECTIF URGENT', 'color: #4CAF50; font-weight: bold;');
+    console.log('%c🔧 BOUTONS RÉPARÉS', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
     console.log('%c═══════════════════════════════════════', 'color: #4CAF50; font-weight: bold;');
     
     let game = null;
@@ -35,7 +35,7 @@
         const checks = {
             'notes.js': typeof AVE_MARIA_MELODY !== 'undefined' && typeof GAME_CONFIG !== 'undefined',
             'style.css': document.querySelector('.version') !== null,
-            'HTML': document.querySelector('.version-footer') !== null,
+            'HTML': document.querySelector('.version') !== null,
             'script.js': true // Ce fichier s'exécute
         };
         
@@ -59,16 +59,21 @@
         try {
             // Vérifier que tous les éléments existent
             const requiredElements = [
-                'gameCanvas', 'startBtn', 'stopBtn', 'testBtn', 'debugBtn',
-                'score', 'combo', 'playedNote', 'playedOctave', 'judgment',
+                'gameCanvas', 'startBtn', 'stopBtn', 'testBtn', 'debugBtn', 'micBtn',
+                'score', 'combo', 'playedNote', 'playedFreq', 'judgment',
                 'micStatus', 'frequency', 'volume', 'debugStatus', 'activeNotes', 'gameTime'
             ];
             
+            let missingElements = [];
             for (let id of requiredElements) {
                 if (!document.getElementById(id)) {
-                    console.error(`❌ Element missing: ${id}`);
-                    return;
+                    missingElements.push(id);
                 }
+            }
+            
+            if (missingElements.length > 0) {
+                console.error(`❌ Elements missing: ${missingElements.join(', ')}`);
+                return;
             }
             
             console.log('✅ All DOM elements found');
@@ -92,7 +97,7 @@
             console.log(`🎻 Creating CelloRhythmGame instance ${GAME_VERSION}...`);
             console.log('═══════════════════════════════════════');
             console.log('🎼 Ave Maria de Gounod - Violoncelle');
-            console.log('📅 Build: 22/07/2025 - CORRECTIF SYNTAXE v2.3.2');
+            console.log('📅 Build: 22/07/2025 - CORRECTIF URGENT v2.3.3');
             console.log('🔧 Mode: Ultra-robust + Tuning mode');
             console.log('═══════════════════════════════════════');
             
@@ -133,7 +138,7 @@
             this.setupCanvas();
             this.initializeGameNotes();
             
-            console.log('✅ CelloRhythmGame created successfully - v2.2.1 FIXED');
+            console.log('✅ CelloRhythmGame created successfully - v2.3.3 FIXED');
             
             // Démarrer l'animation - AVEC protection d'erreur
             try {
@@ -223,7 +228,11 @@
                 console.log('✅ Note simulation successful');
                 
                 setTimeout(() => {
-                    this.debugStatusElement.textContent = 'En attente';
+                    if (this.microphoneActive) {
+                        this.debugStatusElement.textContent = 'Microphone actif - Prêt pour accordage';
+                    } else {
+                        this.debugStatusElement.textContent = 'En attente';
+                    }
                 }, 2000);
                 
             } catch (error) {
@@ -281,115 +290,6 @@
         
         showDebugInfo() {
             console.log('🔧 Showing debug info...');
-                        
-            const info = {
-                'Game playing': this.isPlaying,
-                'Current time': this.currentTime,
-                'Canvas dimensions': `${this.canvas.width}x${this.canvas.height}`,
-                'Game notes count': this.gameNotes.length,
-                'Audio context': this.audioContext ? 'Active' : 'Inactive',
-                'Microphone': this.microphone ? 'Connected' : 'Disconnected',
-                'Last detected note': this.lastDetectedNote || 'None',
-                'Last detected freq': this.lastDetectedFreq,
-                'Current volume': this.currentVolume
-            };
-            
-            console.log('=== DEBUG INFO ===');
-            for (let [key, value] of Object.entries(info)) {
-                console.log(`${key}: ${value}`);
-            }
-            console.log('==================');
-            
-            this.debugStatusElement.textContent = 'Debug affiché en console';
-            setTimeout(() => {
-                this.debugStatusElement.textContent = 'En attente';
-            }, 2000);
-        }
-        
-        setupCanvas() {
-            console.log('🎨 Setting up canvas...');
-            
-            try {
-                const container = this.canvas.parentElement;
-                const width = Math.min(800, container.clientWidth - 20);
-                const height = 200;
-                
-                this.canvas.width = width;
-                this.canvas.height = height;
-                this.canvas.style.width = width + 'px';
-                this.canvas.style.height = height + 'px';
-                
-                console.log(`✅ Canvas setup: ${width}x${height}`);
-                
-                // Test de dessin
-                this.ctx.fillStyle = '#4CAF50';
-                this.ctx.fillRect(10, 10, 50, 20);
-                this.ctx.fillStyle = '#fff';
-                this.ctx.font = '12px Arial';
-                this.ctx.fillText('Canvas OK', 15, 22);
-                
-            } catch (error) {
-                console.error('❌ Canvas setup error:', error);
-                throw error;
-            }
-        }
-        
-        initializeGameNotes() {
-            console.log('🎼 Initializing game notes...');
-            
-            try {
-                if (typeof AVE_MARIA_MELODY === 'undefined') {
-                    throw new Error('AVE_MARIA_MELODY not defined');
-                }
-                
-                if (typeof STAFF_POSITIONS === 'undefined') {
-                    throw new Error('STAFF_POSITIONS not defined');
-                }
-                
-                if (typeof GAME_CONFIG === 'undefined') {
-                    throw new Error('GAME_CONFIG not defined');
-                }
-                
-                this.gameNotes = AVE_MARIA_MELODY.map((noteData, index) => {
-                    // Position initiale plus proche pour voir les notes arriver
-                    const startX = this.canvas.width + 50 + (noteData.startTime * GAME_CONFIG.scrollSpeed);
-                    const note = {
-                        ...noteData,
-                        x: startX,
-                        y: STAFF_POSITIONS[noteData.note] || 90,
-                        played: false,
-                        missed: false,
-                        id: index
-                    };
-                    
-                    console.log(`Note ${index}: ${noteData.note} at x=${note.x}, y=${note.y}, startTime=${noteData.startTime}`);
-                    return note;
-                });
-                
-                console.log(`✅ ${this.gameNotes.length} notes initialized`);
-                
-                // Ajouter quelques notes de test qui arrivent rapidement pour debug
-                this.gameNotes.unshift(
-                    { note: 'C3', x: this.canvas.width + 100, y: 130, startTime: 1, played: false, missed: false, id: -1 },
-                    { note: 'D3', x: this.canvas.width + 200, y: 110, startTime: 2, played: false, missed: false, id: -2 },
-                    { note: 'G3', x: this.canvas.width + 300, y: 80, startTime: 3, played: false, missed: false, id: -3 }
-                );
-                console.log('🔧 Ajout de 3 notes de test pour debug');
-                
-            } catch (error) {
-                console.error('❌ Error initializing notes:', error);
-                this.gameNotes = [
-                    // Notes de secours avec des positions visibles
-                    { note: 'C3', x: this.canvas.width - 100, y: 130, startTime: 1, played: false, missed: false, id: 0 },
-                    { note: 'D3', x: this.canvas.width + 50, y: 110, startTime: 2, played: false, missed: false, id: 1 },
-                    { note: 'G3', x: this.canvas.width + 150, y: 80, startTime: 3, played: false, missed: false, id: 2 }
-                ];
-                console.log('⚠️ Using fallback notes');
-            }
-        }
-        
-        showDebugInfo() {
-            console.log('🔧 Showing debug info...');
             
             const info = {
                 'Microphone active': this.microphoneActive,
@@ -419,6 +319,8 @@
                 }
             }, 2000);
         }
+        
+        async startGame() {
             console.log('🚀 Starting game...');
             this.debugStatusElement.textContent = 'Démarrage du jeu...';
             
@@ -672,6 +574,88 @@
             }
         }
         
+        setupCanvas() {
+            console.log('🎨 Setting up canvas...');
+            
+            try {
+                const container = this.canvas.parentElement;
+                const width = Math.min(800, container.clientWidth - 20);
+                const height = 200;
+                
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.canvas.style.width = width + 'px';
+                this.canvas.style.height = height + 'px';
+                
+                console.log(`✅ Canvas setup: ${width}x${height}`);
+                
+                // Test de dessin
+                this.ctx.fillStyle = '#4CAF50';
+                this.ctx.fillRect(10, 10, 50, 20);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '12px Arial';
+                this.ctx.fillText('Canvas OK', 15, 22);
+                
+            } catch (error) {
+                console.error('❌ Canvas setup error:', error);
+                throw error;
+            }
+        }
+        
+        initializeGameNotes() {
+            console.log('🎼 Initializing game notes...');
+            
+            try {
+                if (typeof AVE_MARIA_MELODY === 'undefined') {
+                    throw new Error('AVE_MARIA_MELODY not defined');
+                }
+                
+                if (typeof STAFF_POSITIONS === 'undefined') {
+                    throw new Error('STAFF_POSITIONS not defined');
+                }
+                
+                if (typeof GAME_CONFIG === 'undefined') {
+                    throw new Error('GAME_CONFIG not defined');
+                }
+                
+                this.gameNotes = AVE_MARIA_MELODY.map((noteData, index) => {
+                    // Position initiale plus proche pour voir les notes arriver
+                    const startX = this.canvas.width + 50 + (noteData.startTime * GAME_CONFIG.scrollSpeed);
+                    const note = {
+                        ...noteData,
+                        x: startX,
+                        y: STAFF_POSITIONS[noteData.note] || 90,
+                        played: false,
+                        missed: false,
+                        id: index
+                    };
+                    
+                    console.log(`Note ${index}: ${noteData.note} at x=${note.x}, y=${note.y}, startTime=${noteData.startTime}`);
+                    return note;
+                });
+                
+                console.log(`✅ ${this.gameNotes.length} notes initialized`);
+                
+                // Ajouter quelques notes de test qui arrivent rapidement pour debug
+                this.gameNotes.unshift(
+                    { note: 'C3', x: this.canvas.width + 100, y: 130, startTime: 1, played: false, missed: false, id: -1 },
+                    { note: 'D3', x: this.canvas.width + 200, y: 110, startTime: 2, played: false, missed: false, id: -2 },
+                    { note: 'G3', x: this.canvas.width + 300, y: 80, startTime: 3, played: false, missed: false, id: -3 }
+                );
+                console.log('🔧 Ajout de 3 notes de test pour debug');
+                
+            } catch (error) {
+                console.error('❌ Error initializing notes:', error);
+                this.gameNotes = [
+                    // Notes de secours avec des positions visibles
+                    { note: 'C3', x: this.canvas.width - 100, y: 130, startTime: 1, played: false, missed: false, id: 0 },
+                    { note: 'D3', x: this.canvas.width + 50, y: 110, startTime: 2, played: false, missed: false, id: 1 },
+                    { note: 'G3', x: this.canvas.width + 150, y: 80, startTime: 3, played: false, missed: false, id: 2 }
+                ];
+                console.log('⚠️ Using fallback notes');
+            }
+        }
+        
         animate() {
             try {
                 if (!this.ctx) return;
@@ -681,6 +665,7 @@
                 if (this.isPlaying) {
                     this.currentTime = (Date.now() - this.startTime) / 1000;
                     this.updateGameNotes();
+                    this.checkMissedNotes();
                 }
                 
                 this.drawStaff();
@@ -774,31 +759,7 @@
                 }
                 
                 // Dessiner les lignes supplémentaires si nécessaire
-                if (note.y < staffLines[0]) {
-                    // Lignes au-dessus de la portée
-                    this.ctx.strokeStyle = strokeColor;
-                    this.ctx.lineWidth = 1;
-                    let lineY = staffLines[0] - 20;
-                    while (lineY >= note.y - 5) {
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(note.x - 12, lineY);
-                        this.ctx.lineTo(note.x + 12, lineY);
-                        this.ctx.stroke();
-                        lineY -= 20;
-                    }
-                } else if (note.y > staffLines[4]) {
-                    // Lignes en-dessous de la portée
-                    this.ctx.strokeStyle = strokeColor;
-                    this.ctx.lineWidth = 1;
-                    let lineY = staffLines[4] + 20;
-                    while (lineY <= note.y + 5) {
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(note.x - 12, lineY);
-                        this.ctx.lineTo(note.x + 12, lineY);
-                        this.ctx.stroke();
-                        lineY += 20;
-                    }
-                }
+                this.drawLedgerLines(note, strokeColor, staffLines);
             }
             
             // Debug: afficher le nombre de notes visibles
@@ -810,8 +771,34 @@
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText('En attente des notes...', this.canvas.width / 2, 30);
             } else if (visibleCount > 0) {
-                if (visibleCount > 0 && this.currentTime % 1 < 0.1) { // Log seulement 1x par seconde
-                    console.log(`🎵 ${visibleCount} notes visibles à t=${this.currentTime.toFixed(1)}s`);
+                console.log(`🎵 ${visibleCount} notes visibles à t=${this.currentTime.toFixed(1)}s`);
+            }
+        }
+        
+        drawLedgerLines(note, strokeColor, staffLines) {
+            if (note.y < staffLines[0]) {
+                // Lignes au-dessus de la portée
+                this.ctx.strokeStyle = strokeColor;
+                this.ctx.lineWidth = 1;
+                let lineY = staffLines[0] - 20;
+                while (lineY >= note.y - 5) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(note.x - 12, lineY);
+                    this.ctx.lineTo(note.x + 12, lineY);
+                    this.ctx.stroke();
+                    lineY -= 20;
+                }
+            } else if (note.y > staffLines[4]) {
+                // Lignes en-dessous de la portée
+                this.ctx.strokeStyle = strokeColor;
+                this.ctx.lineWidth = 1;
+                let lineY = staffLines[4] + 20;
+                while (lineY <= note.y + 5) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(note.x - 12, lineY);
+                    this.ctx.lineTo(note.x + 12, lineY);
+                    this.ctx.stroke();
+                    lineY += 20;
                 }
             }
         }
