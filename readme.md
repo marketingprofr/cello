@@ -1,8 +1,13 @@
-# 🎻 Cello Rhythm Game - Ave Maria v2.3
+# 🎻 Cello Rhythm Game - Ave Maria v2.3.1
 
 Un jeu de rythme musical interactif pour violoncelle basé sur l'Ave Maria de Gounod. Le jeu détecte les notes jouées en temps réel via le microphone et évalue la précision du joueur.
 
-**Version actuelle : v2.3** - MODE ACCORDAGE + Affichage amélioré des notes
+**Version actuelle : v2.3.1** - CORRECTIF CACHE - Éléments manquants corrigés
+
+## 🚨 Correctif v2.3.1
+- **🔧 CORRECTIF CACHE** : Problème "playedOctave manquant" résolu
+- **✅ Éléments mis à jour** : Nouveau format "Do3 + Hz" garanti
+- **🔄 Instructions claires** : Guide Ctrl+F5 pour forcer la mise à jour
 
 ## 🆕 Nouveautés v2.3
 - **🎤 Mode accordage permanent** : Activez le micro pour accorder avant de jouer
@@ -99,6 +104,7 @@ cello-rhythm-game/
 ```
 
 ### Historique des versions
+- **v2.3.1** : 🔧 CORRECTIF CACHE - Erreur "playedOctave manquant" corrigée
 - **v2.3** : 🎤 Mode accordage permanent + affichage amélioré (Do3 + Hz)
 - **v2.2.1** : 🚨 CORRECTIF URGENT - Fonctions manquantes corrigées
 - **v2.2** : Audio ultra-sensible + notes toujours visibles + badge version
@@ -177,20 +183,32 @@ Dans `script.js`, méthode `detectPitch()` :
 
 ## 🐛 Résolution de problèmes
 
+### 🔄 Script affiche une ancienne version (v2.2, etc.)
+- **SOLUTION** : Faites un **Ctrl+F5** (rechargement forcé) 
+- **Cause** : Cache du navigateur avec ancienne version
+- **Vérification** : Dans la zone debug, vous devez voir "VERSION: v2.3.1"
+- **Alternative** : Videz le cache du navigateur
+- **Console** : Message rouge "🔧 SI VOUS VOYEZ v2.2 = FAITES Ctrl+F5"
+
+### ❌ "Element missing: playedOctave"
+- **SOLUTION** : Rechargez complètement avec **Ctrl+F5**
+- **Cause** : HTML pas à jour (cherche encore l'ancien élément)
+- **v2.3+** : Utilise maintenant "playedFreq" au lieu de "playedOctave"
+
 ### 🎤 Le bouton microphone ne répond pas
-- ✅ **Nouveau en v2.3** - Bouton microphone dédié
+- ✅ **Nouveau en v2.3+** - Bouton microphone dédié
 - Vérifiez les permissions du navigateur  
 - Utilisez HTTPS (obligatoire sur certains navigateurs)
 - Le bouton devient rouge quand actif
 
 ### 🎵 Affichage "Do3" ne fonctionne pas
-- ✅ **Nouveau en v2.3** - Format d'affichage amélioré
+- ✅ **Nouveau en v2.3+** - Format d'affichage amélioré
 - Doit afficher "Do3" + "130.8 Hz"
 - Si vous voyez encore "Do" / "3" séparés, rechargez la page
 
 ### ❌ "TypeError: this.drawLedgerLines is not a function"
 - ✅ **CORRIGÉ en v2.2.1** - Ce bug critique est résolu
-- Si vous voyez encore cette erreur, vérifiez que vous avez bien v2.3
+- Si vous voyez encore cette erreur, vérifiez que vous avez bien v2.3.1
 
 ### Le microphone ne fonctionne pas
 - Vérifiez les permissions du navigateur
@@ -211,6 +229,18 @@ Dans `script.js`, méthode `detectPitch()` :
 ### Performance lente
 - Fermez les autres onglets
 - Utilisez un navigateur récent (Chrome/Firefox recommandé)
+
+---
+
+## 🔧 Guide de mise à jour
+
+### Comment s'assurer d'avoir la bonne version :
+
+1. **Rechargez avec Ctrl+F5** (rechargement forcé)
+2. **Vérifiez la version** dans le titre : doit afficher "v2.3.1"  
+3. **Zone debug** : doit afficher "VERSION: v2.3.1" en rouge
+4. **Console** (F12) : doit afficher en vert "🎻 CELLO RHYTHM GAME v2.3.1"
+5. **Boutons** : "🎤 Activer Microphone" (vert) + "Commencer le jeu" (bleu)
 
 ## 📄 Licence
 
