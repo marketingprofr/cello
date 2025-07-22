@@ -278,7 +278,10 @@
             this.frequencyElement.textContent = '0';
             this.volumeElement.textContent = '0';
         }
-            
+        
+        showDebugInfo() {
+            console.log('🔧 Showing debug info...');
+                        
             const info = {
                 'Game playing': this.isPlaying,
                 'Current time': this.currentTime,
@@ -807,7 +810,9 @@
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText('En attente des notes...', this.canvas.width / 2, 30);
             } else if (visibleCount > 0) {
-                console.log(`🎵 ${visibleCount} notes visibles à t=${this.currentTime.toFixed(1)}s`);
+                if (visibleCount > 0 && this.currentTime % 1 < 0.1) { // Log seulement 1x par seconde
+                    console.log(`🎵 ${visibleCount} notes visibles à t=${this.currentTime.toFixed(1)}s`);
+                }
             }
         }
         
