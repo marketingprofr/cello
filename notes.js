@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════
+// 🎵 CELLO RHYTHM GAME - DONNÉES MUSICALES v2.1
+// Ave Maria de Gounod - Adaptation pour violoncelle
+// Dernière mise à jour: 22/07/2025 - Configuration debug améliorée
+// ═══════════════════════════════════════════════════════════════
+
 // Données musicales pour l'Ave Maria de Gounod (version simplifiée pour violoncelle)
 // Les notes sont en clé de Fa, adaptées pour le violoncelle
 
