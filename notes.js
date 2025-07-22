@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
-// 🎵 CELLO RHYTHM GAME - DONNÉES MUSICALES v2.1
+// 🎵 CELLO RHYTHM GAME - DONNÉES MUSICALES v2.2
 // Ave Maria de Gounod - Adaptation pour violoncelle
-// Dernière mise à jour: 22/07/2025 - Configuration debug améliorée
+// Dernière mise à jour: 22/07/2025 - Sensibilité audio améliorée
 // ═══════════════════════════════════════════════════════════════
 
 // Données musicales pour l'Ave Maria de Gounod (version simplifiée pour violoncelle)
@@ -102,13 +102,13 @@ const STAFF_POSITIONS = {
 
 // Configuration du jeu
 const GAME_CONFIG = {
-    scrollSpeed: 80,      // pixels par seconde (ralenti pour debug)
+    scrollSpeed: 60,      // pixels par seconde (encore plus lent pour être sûr de voir)
     hitLineX: 150,        // position X de la ligne de jugement
-    noteRadius: 12,       // rayon des notes (plus gros pour voir)
+    noteRadius: 15,       // rayon des notes (encore plus gros)
     staffLineY: [50, 70, 90, 110, 130], // positions Y des lignes de la portée
-    perfectThreshold: 25, // cents
-    okThreshold: 50,      // cents
-    judgmentWindow: 300   // millisecondes avant/après pour pouvoir jouer une note (plus large)
+    perfectThreshold: 35, // cents (un peu plus tolérant)
+    okThreshold: 75,      // cents (beaucoup plus tolérant)
+    judgmentWindow: 500   // millisecondes (fenêtre plus large)
 };
 
 // Fonction utilitaire pour obtenir le nom français d'une note
