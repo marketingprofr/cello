@@ -1,3 +1,11 @@
+/*
+═══════════════════════════════════════════════════════════════
+🎻 CELLO RHYTHM GAME - STYLES v2.1
+Design moderne sur fond noir avec animations
+Dernière mise à jour: 22/07/2025 - Ajout version tracking
+═══════════════════════════════════════════════════════════════
+*/
+
 * {
     margin: 0;
     padding: 0;
@@ -27,6 +35,17 @@ header h1 {
     color: #4CAF50;
     text-shadow: 0 0 20px #4CAF50;
     margin-bottom: 10px;
+}
+
+.version {
+    font-size: 0.4em;
+    color: #888;
+    font-weight: normal;
+    text-shadow: none;
+    background-color: #222;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #444;
 }
 
 header p {
@@ -232,6 +251,26 @@ button:disabled {
     content: "♪";
     position: absolute;
     left: 0;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.version-footer {
+    margin-top: 30px;
+    padding: 15px;
+    background-color: #111;
+    border: 1px solid #333;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 0.85em;
+    color: #666;
+}
+
+.version-footer div {
+    margin: 3px 0;
+}
+
+#fileStatus {
     color: #4CAF50;
     font-weight: bold;
 }
