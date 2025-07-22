@@ -1,6 +1,8 @@
-# 🎻 Cello Rhythm Game - Ave Maria
+# 🎻 Cello Rhythm Game - Ave Maria v2.1
 
 Un jeu de rythme musical interactif pour violoncelle basé sur l'Ave Maria de Gounod. Le jeu détecte les notes jouées en temps réel via le microphone et évalue la précision du joueur.
+
+**Version actuelle : v2.1** - Système de tracking des versions et robustesse améliorée
 
 ## 🎮 Fonctionnalités
 
@@ -66,6 +68,29 @@ cello-rhythm-game/
 - **Perfect** : ±25 cents → 100 points + bonus combo
 - **OK** : ±50 cents → 50 points + bonus combo réduit  
 - **Miss** : >50 cents ou timing raté → 0 points, combo reset
+
+## 🔍 Vérification des versions
+
+### Interface utilisateur
+- **Titre principal** : Le numéro de version apparaît à côté du titre
+- **Pied de page** : Affiche la version et la date de mise à jour
+- **Statut fichiers** : Indique si tous les fichiers sont bien chargés
+
+### Console développeur (F12)
+```
+🎻 Cello Rhythm Game v2.1 - DOM fully loaded
+📋 Vérification des fichiers v2.1:
+✅ notes.js: OK
+✅ style.css: OK  
+✅ HTML: OK
+✅ script.js: OK
+📊 État global: ✅ Tous les fichiers OK
+```
+
+### Historique des versions
+- **v2.1** : Système de versioning + robustesse améliorée
+- **v2.0** : Gestion d'erreurs complète + debug étendu
+- **v1.0** : Version initiale
 
 ## ⚙️ Configuration technique
 
