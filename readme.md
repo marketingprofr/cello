@@ -1,14 +1,19 @@
-# 🎻 Cello Rhythm Game - Ave Maria v2.2
+# 🎻 Cello Rhythm Game - Ave Maria v2.3
 
 Un jeu de rythme musical interactif pour violoncelle basé sur l'Ave Maria de Gounod. Le jeu détecte les notes jouées en temps réel via le microphone et évalue la précision du joueur.
 
-**Version actuelle : v2.2** - Audio ultra-sensible + Notes toujours visibles
+**Version actuelle : v2.3** - MODE ACCORDAGE + Affichage amélioré des notes
 
-## 🆕 Nouveautés v2.2
-- **🎤 Audio ultra-sensible** : Détection même avec un volume faible
-- **🎵 Notes toujours visibles** : Affichage garanti sur la portée
-- **🎯 Badge version visible** : Plus de doute sur la version installée
-- **⚙️ Configuration plus tolérante** : Perfect ±35 cents, OK ±75 cents
+## 🆕 Nouveautés v2.3
+- **🎤 Mode accordage permanent** : Activez le micro pour accorder avant de jouer
+- **📱 Affichage amélioré** : "Do3" + "130.8 Hz" au lieu de "Do" / "3" séparés
+- **🎯 Boutons séparés** : Micro indépendant du jeu
+- **⚙️ Accordage facile** : Voir les notes détectées en temps réel
+
+## 🚨 Correctif v2.2.1
+- **🔧 CORRECTIF CRITIQUE** : Fonctions `drawLedgerLines` et `checkMissedNotes` manquantes
+- **✅ Tout fonctionne à nouveau** : Notes visibles + détection audio
+- **🛡️ Gestion d'erreur renforcée** : Plus de plantages
 
 ## 🎮 Fonctionnalités
 
@@ -94,6 +99,8 @@ cello-rhythm-game/
 ```
 
 ### Historique des versions
+- **v2.3** : 🎤 Mode accordage permanent + affichage amélioré (Do3 + Hz)
+- **v2.2.1** : 🚨 CORRECTIF URGENT - Fonctions manquantes corrigées
 - **v2.2** : Audio ultra-sensible + notes toujours visibles + badge version
 - **v2.1** : Système de versioning + robustesse améliorée  
 - **v2.0** : Gestion d'erreurs complète + debug étendu
@@ -155,14 +162,35 @@ Dans `script.js`, méthode `detectPitch()` :
 
 ## 🎯 Conseils pour jouer
 
-1. **Volume** : Plus besoin de jouer très fort ! Volume normal suffisant
-2. **Position** : Placez-vous à ~30cm du microphone
-3. **Environnement** : Réduisez les bruits de fond autant que possible
-4. **Archet** : Notes soutenues ET pizzicato fonctionnent maintenant
-5. **Patience** : Les notes mettent quelques secondes à arriver
-6. **Debug** : Les noms des notes s'affichent 30 secondes pour vous aider
+### 🎤 Pour l'accordage (v2.3)
+1. **Activez le micro d'abord** : Bouton dédié pour l'accordage
+2. **Volume normal** : Plus besoin de jouer très fort !
+3. **Affichage temps réel** : Do3 + fréquence exacte affichés
+4. **Accordage fin** : Utilisez la fréquence en Hz pour la précision
+
+### 🎮 Pour le jeu
+1. **Position** : Placez-vous à ~30cm du microphone
+2. **Environnement** : Réduisez les bruits de fond autant que possible
+3. **Archet** : Notes soutenues ET pizzicato fonctionnent maintenant
+4. **Patience** : Les notes mettent quelques secondes à arriver
+5. **Debug** : Les noms des notes s'affichent 30 secondes pour vous aider
 
 ## 🐛 Résolution de problèmes
+
+### 🎤 Le bouton microphone ne répond pas
+- ✅ **Nouveau en v2.3** - Bouton microphone dédié
+- Vérifiez les permissions du navigateur  
+- Utilisez HTTPS (obligatoire sur certains navigateurs)
+- Le bouton devient rouge quand actif
+
+### 🎵 Affichage "Do3" ne fonctionne pas
+- ✅ **Nouveau en v2.3** - Format d'affichage amélioré
+- Doit afficher "Do3" + "130.8 Hz"
+- Si vous voyez encore "Do" / "3" séparés, rechargez la page
+
+### ❌ "TypeError: this.drawLedgerLines is not a function"
+- ✅ **CORRIGÉ en v2.2.1** - Ce bug critique est résolu
+- Si vous voyez encore cette erreur, vérifiez que vous avez bien v2.3
 
 ### Le microphone ne fonctionne pas
 - Vérifiez les permissions du navigateur
@@ -171,13 +199,13 @@ Dans `script.js`, méthode `detectPitch()` :
 - Vérifiez que "Microphone: Activé - Sensibilité élevée" s'affiche
 
 ### Notes mal détectées ou volume trop faible
-- ✅ **v2.2 corrige ce problème !** Ultra-sensible maintenant
+- ✅ **v2.2+ corrige ce problème !** Ultra-sensible maintenant
 - Le status devrait afficher "Sensibilité élevée"
 - Volume normal suffisant (plus besoin de jouer très fort)
 
 ### Pas de notes sur la portée
-- ✅ **v2.2 corrige ce problème !** Notes toujours visibles
-- 3 notes de test ajoutées automatiquement
+- ✅ **v2.2+ corrige ce problème !** Notes toujours visibles
+- 1 note de test ajoutée automatiquement
 - Noms des notes affichés pendant 30 secondes
 
 ### Performance lente
