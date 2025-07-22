@@ -3,11 +3,11 @@
     'use strict';
     
     // ═══════════════════════════════════════
-    // 🎻 CELLO RHYTHM GAME v2.2
-    // Dernière mise à jour: 22/07/2025
+    // 🎻 CELLO RHYTHM GAME v2.3
+    // NOUVELLE FONCTIONNALITÉ: 22/07/2025
     // ═══════════════════════════════════════
     
-    const GAME_VERSION = "v2.2";
+    const GAME_VERSION = "v2.3";
     let game = null;
     
     // Attendre que tout soit chargé
@@ -84,13 +84,21 @@
             console.log(`🎻 Creating CelloRhythmGame instance ${GAME_VERSION}...`);
             console.log('═══════════════════════════════════════');
             console.log('🎼 Ave Maria de Gounod - Violoncelle');
-            console.log('📅 Build: 22/07/2025');
-            console.log('🔧 Mode: Debug + Robuste');
+            console.log('📅 Build: 22/07/2025 - CORRECTIF URGENT');
+            console.log('🔧 Mode: Ultra-robust + Error handling');
             console.log('═══════════════════════════════════════');
             
-            // Elements DOM avec vérification
-            this.canvas = this.getElement('gameCanvas');
-            this.ctx = this.canvas.getContext('2d');
+            // Vérification que les éléments de base existent avant tout
+            try {
+                this.canvas = this.getElement('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                if (!this.ctx) {
+                    throw new Error('Cannot get canvas 2D context');
+                }
+            } catch (error) {
+                console.error('❌ Fatal: Canvas not available:', error);
+                throw error;
+            }
             
             // Variables de jeu
             this.isPlaying = false;
@@ -117,10 +125,19 @@
             this.setupCanvas();
             this.initializeGameNotes();
             
-            console.log('✅ CelloRhythmGame created successfully');
+            console.log('✅ CelloRhythmGame created successfully - v2.2.1 FIXED');
             
-            // Démarrer l'animation
-            this.animate();
+            // Démarrer l'animation - AVEC protection d'erreur
+            try {
+                this.animate();
+            } catch (error) {
+                console.error('❌ Error starting animation:', error);
+                // Réessayer après 1 seconde
+                setTimeout(() => {
+                    console.log('🔄 Retrying animation...');
+                    this.animate();
+                }, 1000);
+            }
         }
         
         getElement(id) {
@@ -132,6 +149,7 @@
         }
         
         initializeElements() {
+            this.micBtn = this.getElement('micBtn');
             this.startBtn = this.getElement('startBtn');
             this.stopBtn = this.getElement('stopBtn');
             this.testBtn = this.getElement('testBtn');
@@ -139,7 +157,7 @@
             this.scoreElement = this.getElement('score');
             this.comboElement = this.getElement('combo');
             this.playedNoteElement = this.getElement('playedNote');
-            this.playedOctaveElement = this.getElement('playedOctave');
+            this.playedFreqElement = this.getElement('playedFreq');
             this.judgmentElement = this.getElement('judgment');
             this.micStatusElement = this.getElement('micStatus');
             this.frequencyElement = this.getElement('frequency');
@@ -147,10 +165,18 @@
             this.debugStatusElement = this.getElement('debugStatus');
             this.activeNotesElement = this.getElement('activeNotes');
             this.gameTimeElement = this.getElement('gameTime');
+            
+            // État du microphone
+            this.microphoneActive = false;
         }
         
         initializeEventListeners() {
             console.log('🎯 Setting up event listeners...');
+            
+            this.micBtn.onclick = () => {
+                console.log('🎤 Microphone button clicked');
+                this.toggleMicrophone();
+            };
             
             this.startBtn.onclick = () => {
                 console.log('▶️ Start button clicked');
@@ -181,8 +207,8 @@
             try {
                 this.lastDetectedNote = 'C3';
                 this.lastDetectedFreq = 130.81;
-                this.playedNoteElement.textContent = 'Do';
-                this.playedOctaveElement.textContent = '3';
+                this.playedNoteElement.textContent = 'Do3';
+                this.playedFreqElement.textContent = '130.8 Hz';
                 this.showJudgment('perfect');
                 
                 this.debugStatusElement.textContent = 'Test réussi!';
@@ -198,8 +224,52 @@
             }
         }
         
-        showDebugInfo() {
-            console.log('🔧 Showing debug info...');
+        async toggleMicrophone() {
+            if (this.microphoneActive) {
+                // Désactiver le microphone
+                this.stopMicrophone();
+            } else {
+                // Activer le microphone
+                try {
+                    await this.initializeAudio();
+                    this.micBtn.textContent = '🎤 Désactiver Microphone';
+                    this.micBtn.style.backgroundColor = '#f44336';
+                    this.debugStatusElement.textContent = 'Microphone actif - Prêt pour accordage';
+                } catch (error) {
+                    console.error('❌ Error activating microphone:', error);
+                    this.debugStatusElement.textContent = 'Erreur micro: ' + error.message;
+                    alert('Erreur microphone: ' + error.message);
+                }
+            }
+        }
+        
+        stopMicrophone() {
+            this.microphoneActive = false;
+            
+            if (this.microphone) {
+                try {
+                    this.microphone.disconnect();
+                } catch (e) {
+                    console.warn('Warning disconnecting microphone:', e);
+                }
+            }
+            if (this.audioContext && this.audioContext.state !== 'closed') {
+                try {
+                    this.audioContext.close();
+                } catch (e) {
+                    console.warn('Warning closing audio context:', e);
+                }
+            }
+            
+            this.micBtn.textContent = '🎤 Activer Microphone';
+            this.micBtn.style.backgroundColor = '#4CAF50';
+            this.micStatusElement.textContent = 'Désactivé';
+            this.debugStatusElement.textContent = 'Microphone arrêté';
+            this.playedNoteElement.textContent = '-';
+            this.playedFreqElement.textContent = '- Hz';
+            this.frequencyElement.textContent = '0';
+            this.volumeElement.textContent = '0';
+        }
             
             const info = {
                 'Game playing': this.isPlaying,
@@ -307,11 +377,48 @@
             }
         }
         
+        showDebugInfo() {
+            console.log('🔧 Showing debug info...');
+            
+            const info = {
+                'Microphone active': this.microphoneActive,
+                'Game playing': this.isPlaying,
+                'Current time': this.currentTime,
+                'Canvas dimensions': `${this.canvas.width}x${this.canvas.height}`,
+                'Game notes count': this.gameNotes.length,
+                'Audio context': this.audioContext ? 'Active' : 'Inactive',
+                'Microphone': this.microphone ? 'Connected' : 'Disconnected',
+                'Last detected note': this.lastDetectedNote || 'None',
+                'Last detected freq': this.lastDetectedFreq,
+                'Current volume': this.currentVolume
+            };
+            
+            console.log('=== DEBUG INFO ===');
+            for (let [key, value] of Object.entries(info)) {
+                console.log(`${key}: ${value}`);
+            }
+            console.log('==================');
+            
+            this.debugStatusElement.textContent = 'Debug affiché en console';
+            setTimeout(() => {
+                if (this.microphoneActive) {
+                    this.debugStatusElement.textContent = 'Microphone actif - Prêt pour accordage';
+                } else {
+                    this.debugStatusElement.textContent = 'En attente';
+                }
+            }, 2000);
+        }
+        
         async startGame() {
             console.log('🚀 Starting game...');
-            this.debugStatusElement.textContent = 'Démarrage...';
+            this.debugStatusElement.textContent = 'Démarrage du jeu...';
             
             try {
+                // Si le microphone n'est pas encore actif, l'activer
+                if (!this.microphoneActive) {
+                    await this.initializeAudio();
+                }
+                
                 this.isPlaying = true;
                 this.startTime = Date.now();
                 this.score = 0;
@@ -320,17 +427,9 @@
                 this.updateUI();
                 this.startBtn.disabled = true;
                 this.stopBtn.disabled = false;
-                this.debugStatusElement.textContent = 'Jeu actif (pas d\'audio)';
+                this.debugStatusElement.textContent = 'Jeu en cours';
                 
-                console.log('✅ Game started (without audio for now)');
-                
-                // Essayer d'initialiser l'audio (optionnel)
-                try {
-                    await this.initializeAudio();
-                } catch (audioError) {
-                    console.warn('⚠️ Audio not available:', audioError.message);
-                    this.micStatusElement.textContent = 'Non disponible';
-                }
+                console.log('✅ Game started successfully');
                 
             } catch (error) {
                 console.error('❌ Error starting game:', error);
@@ -346,24 +445,10 @@
             this.isPlaying = false;
             this.startBtn.disabled = false;
             this.stopBtn.disabled = true;
-            this.debugStatusElement.textContent = 'Arrêté';
             
-            if (this.microphone) {
-                try {
-                    this.microphone.disconnect();
-                } catch (e) {
-                    console.warn('Warning disconnecting microphone:', e);
-                }
-            }
-            if (this.audioContext) {
-                try {
-                    this.audioContext.close();
-                } catch (e) {
-                    console.warn('Warning closing audio context:', e);
-                }
-            }
+            // Ne pas arrêter le microphone, juste le jeu
+            this.debugStatusElement.textContent = this.microphoneActive ? 'Microphone actif - Prêt pour accordage' : 'Jeu arrêté';
             
-            this.micStatusElement.textContent = 'Désactivé';
             this.judgmentElement.textContent = '';
             this.judgmentElement.className = 'judgment';
         }
@@ -398,6 +483,7 @@
             this.dataArray = new Float32Array(this.analyser.frequencyBinCount);
             
             this.microphone.connect(this.analyser);
+            this.microphoneActive = true;
             this.micStatusElement.textContent = 'Activé - Sensibilité élevée';
             
             console.log('✅ Audio initialized with high sensitivity');
@@ -405,8 +491,9 @@
         }
         
         detectPitch() {
-            if (!this.isPlaying || !this.analyser) {
-                if (this.isPlaying) {
+            // Détection active dès que le microphone est activé, même si le jeu n'est pas lancé
+            if (!this.microphoneActive || !this.analyser) {
+                if (this.microphoneActive) {
                     requestAnimationFrame(() => this.detectPitch());
                 }
                 return;
@@ -440,14 +527,25 @@
                     if (detectedNote && typeof getNoteFrenchName === 'function') {
                         this.lastDetectedNote = detectedNote;
                         const frenchName = getNoteFrenchName(detectedNote);
-                        const octave = detectedNote.slice(1);
-                        this.playedNoteElement.textContent = frenchName.replace(/[0-9]/g, '');
-                        this.playedOctaveElement.textContent = octave;
+                        
+                        // Nouveau format d'affichage : Do3 et fréquence
+                        this.playedNoteElement.textContent = frenchName;
+                        this.playedFreqElement.textContent = frequency.toFixed(1) + ' Hz';
                         
                         console.log(`🎵 Note détectée: ${detectedNote} (${frequency.toFixed(1)} Hz)`);
+                        
+                        // Vérifier si la note correspond à une note attendue (seulement si le jeu est lancé)
+                        if (this.isPlaying) {
+                            this.checkNoteMatch(detectedNote, frequency);
+                        }
                     }
                 } else {
                     this.frequencyElement.textContent = '0';
+                    // Réinitialiser l'affichage si pas de son détecté
+                    if (maxAmplitude < -90) {
+                        this.playedNoteElement.textContent = '-';
+                        this.playedFreqElement.textContent = '- Hz';
+                    }
                 }
                 
             } catch (error) {
@@ -455,6 +553,59 @@
             }
             
             requestAnimationFrame(() => this.detectPitch());
+        }
+        
+        checkNoteMatch(detectedNote, frequency) {
+            if (typeof NOTE_FREQUENCIES === 'undefined' || typeof getCentsDifference === 'undefined') {
+                console.warn('Note matching functions not available');
+                return;
+            }
+            
+            if (typeof GAME_CONFIG === 'undefined') {
+                console.warn('GAME_CONFIG not available for note matching');
+                return;
+            }
+            
+            const currentTime = (Date.now() - this.startTime) / 1000;
+            
+            // Chercher les notes dans la fenêtre de jugement
+            for (const note of this.gameNotes) {
+                if (note.played || note.missed) continue;
+                
+                const noteTime = note.startTime;
+                const timeDifference = Math.abs(currentTime - noteTime);
+                
+                if (timeDifference <= GAME_CONFIG.judgmentWindow / 1000) {
+                    if (detectedNote === note.note) {
+                        // Note correcte, calculer la précision
+                        const expectedFreq = NOTE_FREQUENCIES[note.note];
+                        const centsDifference = Math.abs(getCentsDifference(expectedFreq, frequency));
+                        
+                        note.played = true;
+                        this.combo++;
+                        
+                        let judgment = 'miss';
+                        let points = 0;
+                        
+                        if (centsDifference <= GAME_CONFIG.perfectThreshold) {
+                            judgment = 'perfect';
+                            points = 100 + (this.combo * 10);
+                        } else if (centsDifference <= GAME_CONFIG.okThreshold) {
+                            judgment = 'ok';
+                            points = 50 + (this.combo * 5);
+                        } else {
+                            judgment = 'miss';
+                            this.combo = 0;
+                        }
+                        
+                        this.score += points;
+                        this.showJudgment(judgment);
+                        this.updateUI();
+                        console.log(`🎯 Note played: ${detectedNote}, judgment: ${judgment}, cents: ${centsDifference}`);
+                        break;
+                    }
+                }
+            }
         }
         
         frequencyToNote(frequency) {
@@ -537,9 +688,20 @@
         }
         
         updateGameNotes() {
-            const speed = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.scrollSpeed : 80;
+            const speed = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.scrollSpeed : 60;
             for (const note of this.gameNotes) {
                 note.x -= speed / 60;
+            }
+        }
+        
+        checkMissedNotes() {
+            const hitLineX = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.hitLineX : 150;
+            for (const note of this.gameNotes) {
+                if (!note.played && !note.missed && note.x < hitLineX - 50) {
+                    note.missed = true;
+                    this.combo = 0;
+                    console.log(`❌ Note missed: ${note.note}`);
+                }
             }
         }
         
@@ -567,6 +729,7 @@
         drawGameNotes() {
             let visibleCount = 0;
             const noteRadius = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.noteRadius : 12;
+            const staffLines = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.staffLineY : [50, 70, 90, 110, 130];
             
             for (const note of this.gameNotes) {
                 if (note.x < -50 || note.x > this.canvas.width + 50) continue;
@@ -602,7 +765,31 @@
                 }
                 
                 // Dessiner les lignes supplémentaires si nécessaire
-                this.drawLedgerLines(note);
+                if (note.y < staffLines[0]) {
+                    // Lignes au-dessus de la portée
+                    this.ctx.strokeStyle = strokeColor;
+                    this.ctx.lineWidth = 1;
+                    let lineY = staffLines[0] - 20;
+                    while (lineY >= note.y - 5) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(note.x - 12, lineY);
+                        this.ctx.lineTo(note.x + 12, lineY);
+                        this.ctx.stroke();
+                        lineY -= 20;
+                    }
+                } else if (note.y > staffLines[4]) {
+                    // Lignes en-dessous de la portée
+                    this.ctx.strokeStyle = strokeColor;
+                    this.ctx.lineWidth = 1;
+                    let lineY = staffLines[4] + 20;
+                    while (lineY <= note.y + 5) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(note.x - 12, lineY);
+                        this.ctx.lineTo(note.x + 12, lineY);
+                        this.ctx.stroke();
+                        lineY += 20;
+                    }
+                }
             }
             
             // Debug: afficher le nombre de notes visibles
