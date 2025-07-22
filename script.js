@@ -3,11 +3,11 @@
     'use strict';
     
     // ═══════════════════════════════════════
-    // 🎻 CELLO RHYTHM GAME v2.1
+    // 🎻 CELLO RHYTHM GAME v2.2
     // Dernière mise à jour: 22/07/2025
     // ═══════════════════════════════════════
     
-    const GAME_VERSION = "v2.1";
+    const GAME_VERSION = "v2.2";
     let game = null;
     
     // Attendre que tout soit chargé
@@ -269,24 +269,39 @@
                     throw new Error('GAME_CONFIG not defined');
                 }
                 
-                this.gameNotes = AVE_MARIA_MELODY.map((noteData, index) => ({
-                    ...noteData,
-                    x: this.canvas.width + (noteData.startTime * GAME_CONFIG.scrollSpeed),
-                    y: STAFF_POSITIONS[noteData.note] || 90,
-                    played: false,
-                    missed: false,
-                    id: index
-                }));
+                this.gameNotes = AVE_MARIA_MELODY.map((noteData, index) => {
+                    // Position initiale plus proche pour voir les notes arriver
+                    const startX = this.canvas.width + 50 + (noteData.startTime * GAME_CONFIG.scrollSpeed);
+                    const note = {
+                        ...noteData,
+                        x: startX,
+                        y: STAFF_POSITIONS[noteData.note] || 90,
+                        played: false,
+                        missed: false,
+                        id: index
+                    };
+                    
+                    console.log(`Note ${index}: ${noteData.note} at x=${note.x}, y=${note.y}, startTime=${noteData.startTime}`);
+                    return note;
+                });
                 
                 console.log(`✅ ${this.gameNotes.length} notes initialized`);
+                
+                // Ajouter quelques notes de test qui arrivent rapidement pour debug
+                this.gameNotes.unshift(
+                    { note: 'C3', x: this.canvas.width + 100, y: 130, startTime: 1, played: false, missed: false, id: -1 },
+                    { note: 'D3', x: this.canvas.width + 200, y: 110, startTime: 2, played: false, missed: false, id: -2 },
+                    { note: 'G3', x: this.canvas.width + 300, y: 80, startTime: 3, played: false, missed: false, id: -3 }
+                );
+                console.log('🔧 Ajout de 3 notes de test pour debug');
                 
             } catch (error) {
                 console.error('❌ Error initializing notes:', error);
                 this.gameNotes = [
-                    // Notes de secours
-                    { note: 'C3', x: 400, y: 130, startTime: 2, played: false, missed: false, id: 0 },
-                    { note: 'D3', x: 500, y: 110, startTime: 4, played: false, missed: false, id: 1 },
-                    { note: 'E3', x: 600, y: 100, startTime: 6, played: false, missed: false, id: 2 }
+                    // Notes de secours avec des positions visibles
+                    { note: 'C3', x: this.canvas.width - 100, y: 130, startTime: 1, played: false, missed: false, id: 0 },
+                    { note: 'D3', x: this.canvas.width + 50, y: 110, startTime: 2, played: false, missed: false, id: 1 },
+                    { note: 'G3', x: this.canvas.width + 150, y: 80, startTime: 3, played: false, missed: false, id: 2 }
                 ];
                 console.log('⚠️ Using fallback notes');
             }
@@ -366,21 +381,26 @@
                 audio: {
                     echoCancellation: false,
                     autoGainControl: false,
-                    noiseSuppression: false
+                    noiseSuppression: false,
+                    sampleRate: 44100
                 } 
             });
             
             this.microphone = this.audioContext.createMediaStreamSource(stream);
             this.analyser = this.audioContext.createAnalyser();
             
-            this.analyser.fftSize = 2048;
-            this.analyser.smoothingTimeConstant = 0.3;
+            // Configuration plus sensible
+            this.analyser.fftSize = 8192;  // Plus de résolution
+            this.analyser.smoothingTimeConstant = 0.1;  // Moins de lissage
+            this.analyser.minDecibels = -100;  // Plus sensible aux faibles volumes
+            this.analyser.maxDecibels = -10;
+            
             this.dataArray = new Float32Array(this.analyser.frequencyBinCount);
             
             this.microphone.connect(this.analyser);
-            this.micStatusElement.textContent = 'Activé';
+            this.micStatusElement.textContent = 'Activé - Sensibilité élevée';
             
-            console.log('✅ Audio initialized');
+            console.log('✅ Audio initialized with high sensitivity');
             this.detectPitch();
         }
         
@@ -398,7 +418,8 @@
                 let maxAmplitude = -Infinity;
                 let maxIndex = 0;
                 
-                for (let i = 10; i < this.dataArray.length / 4; i++) {
+                // Recherche dans une plage plus large et avec seuil plus bas
+                for (let i = 5; i < this.dataArray.length / 2; i++) {
                     if (this.dataArray[i] > maxAmplitude) {
                         maxAmplitude = this.dataArray[i];
                         maxIndex = i;
@@ -408,7 +429,8 @@
                 this.currentVolume = Math.round(maxAmplitude);
                 this.volumeElement.textContent = this.currentVolume;
                 
-                if (maxAmplitude > -60) {
+                // Seuil beaucoup plus bas pour détecter les notes plus facilement
+                if (maxAmplitude > -80) {  // Était -60, maintenant -80 (plus sensible)
                     const sampleRate = this.audioContext.sampleRate;
                     const frequency = (maxIndex * sampleRate) / this.analyser.fftSize;
                     this.lastDetectedFreq = frequency;
@@ -421,6 +443,8 @@
                         const octave = detectedNote.slice(1);
                         this.playedNoteElement.textContent = frenchName.replace(/[0-9]/g, '');
                         this.playedOctaveElement.textContent = octave;
+                        
+                        console.log(`🎵 Note détectée: ${detectedNote} (${frequency.toFixed(1)} Hz)`);
                     }
                 } else {
                     this.frequencyElement.textContent = '0';
@@ -449,7 +473,12 @@
                 }
             }
             
-            return closestNote;
+            // Tolérance plus large (15% au lieu de 10%)
+            if (closestNote && minDifference < NOTE_FREQUENCIES[closestNote] * 0.15) {
+                return closestNote;
+            }
+            
+            return null;
         }
         
         showJudgment(judgment) {
@@ -540,25 +569,52 @@
             const noteRadius = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.noteRadius : 12;
             
             for (const note of this.gameNotes) {
-                if (note.x < -30 || note.x > this.canvas.width + 30) continue;
+                if (note.x < -50 || note.x > this.canvas.width + 50) continue;
                 visibleCount++;
                 
-                let color = '#4CAF50';
-                if (note.played) color = '#2196F3';
-                else if (note.missed) color = '#f44336';
+                let color = '#4CAF50';  // Vert pour les notes à venir
+                let strokeColor = '#2E7D32';
                 
+                if (note.played) {
+                    color = '#2196F3';  // Bleu pour les notes jouées
+                    strokeColor = '#1976D2';
+                } else if (note.missed) {
+                    color = '#f44336';  // Rouge pour les notes ratées
+                    strokeColor = '#D32F2F';
+                }
+                
+                // Dessiner la note avec contour
                 this.ctx.fillStyle = color;
+                this.ctx.strokeStyle = strokeColor;
+                this.ctx.lineWidth = 2;
                 this.ctx.beginPath();
                 this.ctx.arc(note.x, note.y, noteRadius, 0, 2 * Math.PI);
                 this.ctx.fill();
+                this.ctx.stroke();
                 
-                // Afficher le nom de la note les 10 premières secondes
-                if (this.currentTime < 10) {
+                // Afficher le nom de la note pendant plus longtemps pour debug
+                if (this.currentTime < 30) {  // 30 secondes au lieu de 10
                     this.ctx.fillStyle = '#fff';
-                    this.ctx.font = '12px Arial';
+                    this.ctx.font = 'bold 12px Arial';
                     this.ctx.textAlign = 'center';
-                    this.ctx.fillText(note.note, note.x, note.y - 20);
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(note.note, note.x, note.y - 25);
                 }
+                
+                // Dessiner les lignes supplémentaires si nécessaire
+                this.drawLedgerLines(note);
+            }
+            
+            // Debug: afficher le nombre de notes visibles
+            if (visibleCount === 0 && this.isPlaying && this.currentTime < 10) {
+                console.log(`⚠️ No visible notes at time ${this.currentTime.toFixed(1)}s`);
+                // Dessiner un message de debug sur le canvas
+                this.ctx.fillStyle = '#FF5722';
+                this.ctx.font = 'bold 16px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('En attente des notes...', this.canvas.width / 2, 30);
+            } else if (visibleCount > 0) {
+                console.log(`🎵 ${visibleCount} notes visibles à t=${this.currentTime.toFixed(1)}s`);
             }
         }
         
