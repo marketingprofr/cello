@@ -2,16 +2,49 @@
 (function() {
     'use strict';
     
+    // ═══════════════════════════════════════
+    // 🎻 CELLO RHYTHM GAME v2.1
+    // Dernière mise à jour: 22/07/2025
+    // ═══════════════════════════════════════
+    
+    const GAME_VERSION = "v2.1";
     let game = null;
     
     // Attendre que tout soit chargé
     function waitForLoad() {
         if (document.readyState === 'complete') {
-            console.log('🎻 DOM fully loaded, initializing game...');
+            console.log(`🎻 Cello Rhythm Game ${GAME_VERSION} - DOM fully loaded`);
+            checkFilesVersion();
             initializeGame();
         } else {
             setTimeout(waitForLoad, 100);
         }
+    }
+    
+    function checkFilesVersion() {
+        console.log(`📋 Vérification des fichiers ${GAME_VERSION}:`);
+        
+        const checks = {
+            'notes.js': typeof AVE_MARIA_MELODY !== 'undefined' && typeof GAME_CONFIG !== 'undefined',
+            'style.css': document.querySelector('.version') !== null,
+            'HTML': document.querySelector('.version-footer') !== null,
+            'script.js': true // Ce fichier s'exécute
+        };
+        
+        let allOK = true;
+        for (let [file, status] of Object.entries(checks)) {
+            console.log(`${status ? '✅' : '❌'} ${file}: ${status ? 'OK' : 'MANQUANT'}`);
+            if (!status) allOK = false;
+        }
+        
+        const fileStatusElement = document.getElementById('fileStatus');
+        if (fileStatusElement) {
+            fileStatusElement.textContent = allOK ? `Tous OK (${GAME_VERSION})` : 'Erreurs détectées';
+            fileStatusElement.style.color = allOK ? '#4CAF50' : '#f44336';
+        }
+        
+        console.log(`📊 État global: ${allOK ? '✅ Tous les fichiers OK' : '❌ Erreurs détectées'}`);
+        return allOK;
     }
     
     function initializeGame() {
@@ -48,7 +81,12 @@
     
     class CelloRhythmGame {
         constructor() {
-            console.log('🎻 Creating CelloRhythmGame instance...');
+            console.log(`🎻 Creating CelloRhythmGame instance ${GAME_VERSION}...`);
+            console.log('═══════════════════════════════════════');
+            console.log('🎼 Ave Maria de Gounod - Violoncelle');
+            console.log('📅 Build: 22/07/2025');
+            console.log('🔧 Mode: Debug + Robuste');
+            console.log('═══════════════════════════════════════');
             
             // Elements DOM avec vérification
             this.canvas = this.getElement('gameCanvas');
