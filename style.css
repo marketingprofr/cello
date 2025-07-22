@@ -1,8 +1,8 @@
 /*
 ═══════════════════════════════════════════════════════════════
-🎻 CELLO RHYTHM GAME - STYLES v2.1
+🎻 CELLO RHYTHM GAME - STYLES v2.2
 Design moderne sur fond noir avec animations
-Dernière mise à jour: 22/07/2025 - Ajout version tracking
+Dernière mise à jour: 22/07/2025 - Version badge amélioré
 ═══════════════════════════════════════════════════════════════
 */
 
@@ -30,22 +30,30 @@ header {
     margin-bottom: 20px;
 }
 
+.title-with-version {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
 header h1 {
     font-size: 2.5em;
     color: #4CAF50;
     text-shadow: 0 0 20px #4CAF50;
-    margin-bottom: 10px;
+    margin: 0;
 }
 
 .version {
-    font-size: 0.4em;
+    font-size: 0.8em;
     color: #888;
     font-weight: normal;
-    text-shadow: none;
     background-color: #222;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 4px 12px;
+    border-radius: 12px;
     border: 1px solid #444;
+    white-space: nowrap;
 }
 
 header p {
