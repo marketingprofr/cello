@@ -41,34 +41,34 @@ const NOTE_NAMES_FR = {
 // Mélodie de l'Ave Maria de Gounod (premières mesures)
 // Chaque note contient: note scientifique, durée en secondes, position x de départ
 const AVE_MARIA_MELODY = [
-    { note: 'G3', duration: 1.5, startTime: 0 },
-    { note: 'C4', duration: 1.0, startTime: 1.5 },
-    { note: 'C4', duration: 1.0, startTime: 2.5 },
-    { note: 'D4', duration: 0.5, startTime: 3.5 },
-    { note: 'C4', duration: 0.5, startTime: 4.0 },
-    { note: 'B3', duration: 1.0, startTime: 4.5 },
-    { note: 'A3', duration: 1.5, startTime: 5.5 },
+    { note: 'G3', duration: 1.5, startTime: 2.0 },  // Commence plus tard pour voir les notes arriver
+    { note: 'C4', duration: 1.0, startTime: 4.0 },
+    { note: 'C4', duration: 1.0, startTime: 6.0 },
+    { note: 'D4', duration: 0.5, startTime: 8.0 },
+    { note: 'C4', duration: 0.5, startTime: 9.0 },
+    { note: 'B3', duration: 1.0, startTime: 10.0 },
+    { note: 'A3', duration: 1.5, startTime: 12.0 },
     
-    { note: 'A3', duration: 1.0, startTime: 7.0 },
-    { note: 'G3', duration: 1.0, startTime: 8.0 },
-    { note: 'A3', duration: 0.5, startTime: 9.0 },
-    { note: 'B3', duration: 0.5, startTime: 9.5 },
-    { note: 'C4', duration: 1.0, startTime: 10.0 },
-    { note: 'G3', duration: 1.5, startTime: 11.0 },
+    { note: 'A3', duration: 1.0, startTime: 14.0 },
+    { note: 'G3', duration: 1.0, startTime: 16.0 },
+    { note: 'A3', duration: 0.5, startTime: 18.0 },
+    { note: 'B3', duration: 0.5, startTime: 19.0 },
+    { note: 'C4', duration: 1.0, startTime: 20.0 },
+    { note: 'G3', duration: 1.5, startTime: 22.0 },
     
-    { note: 'G3', duration: 1.0, startTime: 12.5 },
-    { note: 'C4', duration: 1.0, startTime: 13.5 },
-    { note: 'C4', duration: 1.0, startTime: 14.5 },
-    { note: 'D4', duration: 0.5, startTime: 15.5 },
-    { note: 'E4', duration: 0.5, startTime: 16.0 },
-    { note: 'F4', duration: 1.0, startTime: 16.5 },
-    { note: 'E4', duration: 1.5, startTime: 17.5 },
+    { note: 'G3', duration: 1.0, startTime: 24.0 },
+    { note: 'C4', duration: 1.0, startTime: 26.0 },
+    { note: 'C4', duration: 1.0, startTime: 28.0 },
+    { note: 'D4', duration: 0.5, startTime: 30.0 },
+    { note: 'E4', duration: 0.5, startTime: 31.0 },
+    { note: 'F4', duration: 1.0, startTime: 32.0 },
+    { note: 'E4', duration: 1.5, startTime: 34.0 },
     
-    { note: 'E4', duration: 1.0, startTime: 19.0 },
-    { note: 'D4', duration: 1.0, startTime: 20.0 },
-    { note: 'C4', duration: 1.0, startTime: 21.0 },
-    { note: 'B3', duration: 1.0, startTime: 22.0 },
-    { note: 'C4', duration: 2.0, startTime: 23.0 }
+    { note: 'E4', duration: 1.0, startTime: 36.0 },
+    { note: 'D4', duration: 1.0, startTime: 38.0 },
+    { note: 'C4', duration: 1.0, startTime: 40.0 },
+    { note: 'B3', duration: 1.0, startTime: 42.0 },
+    { note: 'C4', duration: 2.0, startTime: 44.0 }
 ];
 
 // Positions des notes sur la portée en clé de Fa
@@ -96,13 +96,13 @@ const STAFF_POSITIONS = {
 
 // Configuration du jeu
 const GAME_CONFIG = {
-    scrollSpeed: 100,     // pixels par seconde
+    scrollSpeed: 80,      // pixels par seconde (ralenti pour debug)
     hitLineX: 150,        // position X de la ligne de jugement
-    noteRadius: 8,        // rayon des notes
+    noteRadius: 12,       // rayon des notes (plus gros pour voir)
     staffLineY: [50, 70, 90, 110, 130], // positions Y des lignes de la portée
     perfectThreshold: 25, // cents
     okThreshold: 50,      // cents
-    judgmentWindow: 200   // millisecondes avant/après pour pouvoir jouer une note
+    judgmentWindow: 300   // millisecondes avant/après pour pouvoir jouer une note (plus large)
 };
 
 // Fonction utilitaire pour obtenir le nom français d'une note
