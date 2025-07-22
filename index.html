@@ -22,6 +22,13 @@
             </div>
         </div>
 
+        <!-- Zone de debug -->
+        <div class="debug-info">
+            <div>Status: <span id="debugStatus">En attente</span></div>
+            <div>Notes actives: <span id="activeNotes">0</span></div>
+            <div>Temps: <span id="gameTime">0</span>s</div>
+        </div>
+
         <div class="game-area">
             <div class="player-note-area">
                 <h3>Note jouée :</h3>
@@ -37,7 +44,8 @@
 
         <div class="audio-status">
             <div>Microphone: <span id="micStatus">Désactivé</span></div>
-            <div>Fréquence détectée: <span id="frequency">0</span> Hz</div>
+            <div>Fréquence: <span id="frequency">0</span> Hz</div>
+            <div>Volume: <span id="volume">0</span></div>
         </div>
 
         <div class="instructions">
@@ -45,9 +53,13 @@
             <ul>
                 <li>Cliquez sur "Commencer" pour démarrer le jeu</li>
                 <li>Autorisez l'accès au microphone</li>
-                <li>Jouez les notes au violoncelle quand elles arrivent sur la ligne de jugement</li>
+                <li>Jouez les notes au violoncelle quand elles arrivent sur la ligne rouge</li>
                 <li>Perfect: ±25 cents | OK: ±50 cents | Miss: >50 cents</li>
             </ul>
+            
+            <h3>Debug :</h3>
+            <button id="testBtn">🎵 Test note (Do3)</button>
+            <button id="debugBtn">🔧 Afficher debug console</button>
         </div>
     </div>
 
