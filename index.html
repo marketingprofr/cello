@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cello Rhythm Game - Ave Maria</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>🎻 Cello Rhythm Game</h1>
+            <p>Ave Maria de Gounod</p>
+        </header>
+
+        <div class="controls">
+            <button id="startBtn">Commencer</button>
+            <button id="stopBtn" disabled>Arrêter</button>
+            <div class="score">
+                <span>Score: <span id="score">0</span></span>
+                <span>Combo: <span id="combo">0</span></span>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <div class="player-note-area">
+                <h3>Note jouée :</h3>
+                <div id="playedNote" class="played-note">-</div>
+                <div id="playedOctave" class="played-octave">-</div>
+                <div id="judgment" class="judgment"></div>
+            </div>
+
+            <div class="staff-container">
+                <canvas id="gameCanvas" width="800" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="audio-status">
+            <div>Microphone: <span id="micStatus">Désactivé</span></div>
+            <div>Fréquence détectée: <span id="frequency">0</span> Hz</div>
+        </div>
+
+        <div class="instructions">
+            <h3>Instructions :</h3>
+            <ul>
+                <li>Cliquez sur "Commencer" pour démarrer le jeu</li>
+                <li>Autorisez l'accès au microphone</li>
+                <li>Jouez les notes au violoncelle quand elles arrivent sur la ligne de jugement</li>
+                <li>Perfect: ±25 cents | OK: ±50 cents | Miss: >50 cents</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="notes.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
