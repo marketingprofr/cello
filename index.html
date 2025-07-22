@@ -11,13 +11,14 @@
         <header>
             <div class="title-with-version">
                 <h1>🎻 Cello Rhythm Game</h1>
-                <span class="version">v2.2</span>
+                <span class="version">v2.3</span>
             </div>
             <p>Ave Maria de Gounod</p>
         </header>
 
         <div class="controls">
-            <button id="startBtn">Commencer</button>
+            <button id="micBtn">🎤 Activer Microphone</button>
+            <button id="startBtn">Commencer le jeu</button>
             <button id="stopBtn" disabled>Arrêter</button>
             <div class="score">
                 <span>Score: <span id="score">0</span></span>
@@ -36,7 +37,7 @@
             <div class="player-note-area">
                 <h3>Note jouée :</h3>
                 <div id="playedNote" class="played-note">-</div>
-                <div id="playedOctave" class="played-octave">-</div>
+                <div id="playedFreq" class="played-freq">- Hz</div>
                 <div id="judgment" class="judgment"></div>
             </div>
 
