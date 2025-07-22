@@ -3,11 +3,19 @@
     'use strict';
     
     // ═══════════════════════════════════════
-    // 🎻 CELLO RHYTHM GAME v2.3
-    // NOUVELLE FONCTIONNALITÉ: 22/07/2025
+    // 🎻 CELLO RHYTHM GAME v2.3.1
+    // CORRECTIF CACHE: 22/07/2025
     // ═══════════════════════════════════════
     
-    const GAME_VERSION = "v2.3";
+    const GAME_VERSION = "v2.3.1";
+    
+    // VÉRIFICATION IMMÉDIATE DE LA VERSION
+    console.log('%c═══════════════════════════════════════', 'color: #4CAF50; font-weight: bold;');
+    console.log('%c🎻 CELLO RHYTHM GAME v2.3.1', 'color: #4CAF50; font-size: 16px; font-weight: bold;');
+    console.log('%c📅 BUILD: 22/07/2025 - CORRECTIF CACHE', 'color: #4CAF50; font-weight: bold;');
+    console.log('%c🔧 SI VOUS VOYEZ v2.2 = FAITES Ctrl+F5', 'color: #FF5722; font-size: 14px; font-weight: bold;');
+    console.log('%c═══════════════════════════════════════', 'color: #4CAF50; font-weight: bold;');
+    
     let game = null;
     
     // Attendre que tout soit chargé
@@ -84,8 +92,8 @@
             console.log(`🎻 Creating CelloRhythmGame instance ${GAME_VERSION}...`);
             console.log('═══════════════════════════════════════');
             console.log('🎼 Ave Maria de Gounod - Violoncelle');
-            console.log('📅 Build: 22/07/2025 - CORRECTIF URGENT');
-            console.log('🔧 Mode: Ultra-robust + Error handling');
+            console.log('📅 Build: 22/07/2025 - MODE ACCORDAGE v2.3');
+            console.log('🔧 Mode: Ultra-robust + Tuning mode');
             console.log('═══════════════════════════════════════');
             
             // Vérification que les éléments de base existent avant tout
