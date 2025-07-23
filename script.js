@@ -30,12 +30,28 @@
         staffLineY: [50, 70, 90, 110, 130]
     };
     
-    // Positions des notes sur la portée (clé de fa)
+    // Positions des notes sur la portée (clé de fa) - COMPLÈTES
     const STAFF_POSITIONS = {
+        // Notes très graves (en dessous de la portée)
+        'C1': 210, 'D1': 200, 'E1': 190, 'F1': 180, 'G1': 170, 'A1': 160, 'B1': 150,
+        
+        // Notes graves (portée basse)
         'C2': 170, 'D2': 160, 'E2': 150, 'F2': 140, 'G2': 130,
-        'A2': 120, 'B2': 110, 'C3': 130, 'D3': 120, 'E3': 110,
-        'F3': 100, 'G3': 90, 'A3': 80, 'B3': 70, 'C4': 60,
-        'D4': 50, 'E4': 40, 'F4': 30, 'G4': 20, 'A4': 10, 'B4': 0
+        'A2': 120, 'B2': 110, 
+        
+        // Notes moyennes (sur la portée)
+        'C3': 130, 'D3': 120, 'E3': 110, 'F3': 100, 'G3': 90, 'A3': 80, 'B3': 70,
+        
+        // Notes aiguës (au-dessus de la portée)
+        'C4': 60, 'D4': 50, 'E4': 40, 'F4': 30, 'G4': 20, 'A4': 10, 'B4': 0,
+        'C5': -10, 'D5': -20, 'E5': -30, 'F5': -40, 'G5': -50,
+        
+        // Notes avec dièses/bémols
+        'C#1': 205, 'D#1': 195, 'F#1': 175, 'G#1': 165, 'A#1': 155,
+        'C#2': 165, 'D#2': 155, 'F#2': 135, 'G#2': 125, 'A#2': 115,
+        'C#3': 125, 'D#3': 115, 'F#3': 95, 'G#3': 85, 'A#3': 75,
+        'C#4': 55, 'D#4': 45, 'F#4': 25, 'G#4': 15, 'A#4': 5,
+        'C#5': -15, 'D#5': -25, 'F#5': -45, 'G#5': -55, 'A#5': -65
     };
     
     // Mélodie Ave Maria (version simplifiée mais complète)
@@ -123,10 +139,18 @@
             this.combo = 0;
             this.gameNotes = [];
             
-            // Variables audio
+            // Variables audio avec stabilisation
             this.currentVolume = 0;
             this.lastDetectedFreq = 0;
             this.lastDetectedNote = null;
+            
+            // NOUVEAU : Stabilisation de la détection
+            this.stableNote = null;
+            this.stableFreq = 0;
+            this.noteConfidenceCount = 0;
+            this.noteDisplayTimeout = null;
+            this.minConfidence = 3; // Note doit être détectée 3 fois de suite
+            this.displayPersistence = 200; // Note reste affichée 200ms après disparition
             
             // Initialiser
             this.initializeElements();
@@ -314,31 +338,72 @@
                     const detectedNote = this.frequencyToNote(frequency);
                     if (detectedNote) {
                         this.lastDetectedNote = detectedNote;
-                        const frenchName = getNoteFrenchName(detectedNote);
+                        this.lastDetectedFreq = frequency;
                         
-                        const noteEl = document.getElementById('playedNote');
-                        const freqDisplayEl = document.getElementById('playedFreq');
+                        // STABILISATION : Confirmer la note avant de l'afficher
+                        if (detectedNote === this.stableNote) {
+                            // Même note que précédemment, augmenter la confiance
+                            this.noteConfidenceCount++;
+                        } else {
+                            // Nouvelle note, réinitialiser
+                            this.noteConfidenceCount = 1;
+                        }
                         
-                        if (noteEl && freqDisplayEl) {
-                            noteEl.textContent = frenchName;
-                            freqDisplayEl.textContent = frequency.toFixed(1) + ' Hz';
+                        // Afficher seulement si suffisamment de confiance
+                        if (this.noteConfidenceCount >= this.minConfidence) {
+                            this.stableNote = detectedNote;
+                            this.stableFreq = frequency;
+                            
+                            // Annuler le timeout de disparition
+                            if (this.noteDisplayTimeout) {
+                                clearTimeout(this.noteDisplayTimeout);
+                                this.noteDisplayTimeout = null;
+                            }
+                            
+                            const frenchName = getNoteFrenchName(detectedNote);
+                            const noteEl = document.getElementById('playedNote');
+                            const freqDisplayEl = document.getElementById('playedFreq');
+                            
+                            if (noteEl && freqDisplayEl) {
+                                noteEl.textContent = frenchName;
+                                freqDisplayEl.textContent = frequency.toFixed(1) + ' Hz';
+                            }
                         }
                         
                         // Vérifier correspondance avec les notes du jeu
-                        if (this.isPlaying) {
-                            this.checkNoteMatch(detectedNote, frequency);
+                        if (this.isPlaying && this.stableNote) {
+                            this.checkNoteMatch(this.stableNote, this.stableFreq);
+                        }
+                    } else {
+                        // Aucune note détectée, diminuer progressivement la confiance
+                        if (this.noteConfidenceCount > 0) {
+                            this.noteConfidenceCount--;
                         }
                     }
                 } else {
                     if (freqEl) freqEl.textContent = '0';
                     
-                    if (maxAmplitude < -90) {
-                        const noteEl = document.getElementById('playedNote');
-                        const freqDisplayEl = document.getElementById('playedFreq');
-                        if (noteEl && freqDisplayEl) {
-                            noteEl.textContent = '-';
-                            freqDisplayEl.textContent = '- Hz';
-                        }
+                    // Diminuer la confiance quand pas de son
+                    if (this.noteConfidenceCount > 0) {
+                        this.noteConfidenceCount--;
+                    }
+                    
+                    // Si silence total et pas de timeout déjà en cours
+                    if (maxAmplitude < -90 && this.stableNote && !this.noteDisplayTimeout) {
+                        // Programmer la disparition de la note avec délai
+                        this.noteDisplayTimeout = setTimeout(() => {
+                            this.stableNote = null;
+                            this.stableFreq = 0;
+                            this.noteConfidenceCount = 0;
+                            
+                            const noteEl = document.getElementById('playedNote');
+                            const freqDisplayEl = document.getElementById('playedFreq');
+                            if (noteEl && freqDisplayEl) {
+                                noteEl.textContent = '-';
+                                freqDisplayEl.textContent = '- Hz';
+                            }
+                            this.noteDisplayTimeout = null;
+                        }, this.displayPersistence);
                     }
                 }
                 
@@ -718,13 +783,22 @@
         
         drawPlayedNote() {
             // Dessiner la note actuellement jouée sur la portée
-            if (!this.microphoneActive || !this.lastDetectedNote) {
+            if (!this.microphoneActive || !this.stableNote) {
                 return;
             }
             
             // Position Y de la note sur la portée
-            const noteY = STAFF_POSITIONS[this.lastDetectedNote];
-            if (!noteY) return;
+            let noteY = STAFF_POSITIONS[this.stableNote];
+            
+            // Si la note n'est pas dans la table, calculer sa position
+            if (noteY === undefined) {
+                console.warn(`Position non définie pour ${this.stableNote}, calcul automatique`);
+                // Calculer la position basée sur la fréquence (fallback)
+                const baseFreq = NOTE_FREQUENCIES['C3'] || 130.81;
+                const currentFreq = NOTE_FREQUENCIES[this.stableNote] || this.stableFreq;
+                const semitonesFromC3 = Math.round(12 * Math.log2(currentFreq / baseFreq));
+                noteY = 130 - (semitonesFromC3 * 10); // 10 pixels par demi-ton
+            }
             
             // Position X = ligne de jeu
             const noteX = GAME_CONFIG.hitLineX;
@@ -760,14 +834,14 @@
             this.ctx.textBaseline = 'middle';
             
             // Contour noir pour lisibilité
-            this.ctx.strokeText(getNoteFrenchName(this.lastDetectedNote), noteX, noteY - 25);
+            this.ctx.strokeText(getNoteFrenchName(this.stableNote), noteX, noteY - 25);
             // Texte blanc par-dessus
-            this.ctx.fillText(getNoteFrenchName(this.lastDetectedNote), noteX, noteY - 25);
+            this.ctx.fillText(getNoteFrenchName(this.stableNote), noteX, noteY - 25);
             
             // Indicateur de fréquence précise (petit texte)
             this.ctx.font = '10px Arial';
             this.ctx.fillStyle = '#CCCCCC';
-            this.ctx.fillText(`${this.lastDetectedFreq.toFixed(1)} Hz`, noteX, noteY + 25);
+            this.ctx.fillText(`${this.stableFreq.toFixed(1)} Hz`, noteX, noteY + 25);
         }
         
         drawLedgerLinesForPlayedNote(noteX, noteY, strokeColor) {
