@@ -574,6 +574,7 @@
                 this.drawClef();
                 this.drawGameNotes();
                 this.drawHitLine();
+                this.drawPlayedNote(); // NOUVEAU : Note jouée en temps réel
                 this.updateUI();
                 
             } catch (error) {
@@ -713,6 +714,90 @@
             this.ctx.font = 'bold 12px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.fillText('♪ Jouez ici ♪', GAME_CONFIG.hitLineX, 15);
+        }
+        
+        drawPlayedNote() {
+            // Dessiner la note actuellement jouée sur la portée
+            if (!this.microphoneActive || !this.lastDetectedNote) {
+                return;
+            }
+            
+            // Position Y de la note sur la portée
+            const noteY = STAFF_POSITIONS[this.lastDetectedNote];
+            if (!noteY) return;
+            
+            // Position X = ligne de jeu
+            const noteX = GAME_CONFIG.hitLineX;
+            
+            // Couleur spéciale pour la note jouée (jaune/orange brillant)
+            const playedColor = '#FFC107'; // Jaune ambré
+            const playedStroke = '#FF8F00'; // Orange foncé
+            
+            // Dessiner la note avec un effet lumineux
+            this.ctx.shadowColor = playedColor;
+            this.ctx.shadowBlur = 15;
+            
+            this.ctx.fillStyle = playedColor;
+            this.ctx.strokeStyle = playedStroke;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.arc(noteX, noteY, GAME_CONFIG.noteRadius + 2, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.stroke();
+            
+            // Réinitialiser l'ombre
+            this.ctx.shadowBlur = 0;
+            
+            // Dessiner les lignes supplémentaires si nécessaire
+            this.drawLedgerLinesForPlayedNote(noteX, noteY, playedStroke);
+            
+            // Afficher le nom de la note au-dessus
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.strokeStyle = '#000000';
+            this.ctx.lineWidth = 3;
+            this.ctx.font = 'bold 14px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            
+            // Contour noir pour lisibilité
+            this.ctx.strokeText(getNoteFrenchName(this.lastDetectedNote), noteX, noteY - 25);
+            // Texte blanc par-dessus
+            this.ctx.fillText(getNoteFrenchName(this.lastDetectedNote), noteX, noteY - 25);
+            
+            // Indicateur de fréquence précise (petit texte)
+            this.ctx.font = '10px Arial';
+            this.ctx.fillStyle = '#CCCCCC';
+            this.ctx.fillText(`${this.lastDetectedFreq.toFixed(1)} Hz`, noteX, noteY + 25);
+        }
+        
+        drawLedgerLinesForPlayedNote(noteX, noteY, strokeColor) {
+            const staffLines = GAME_CONFIG.staffLineY;
+            
+            if (noteY < staffLines[0] - 5) {
+                // Lignes au-dessus
+                this.ctx.strokeStyle = strokeColor;
+                this.ctx.lineWidth = 2;
+                let lineY = staffLines[0] - 20;
+                while (lineY >= noteY - 10) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(noteX - 18, lineY);
+                    this.ctx.lineTo(noteX + 18, lineY);
+                    this.ctx.stroke();
+                    lineY -= 20;
+                }
+            } else if (noteY > staffLines[4] + 5) {
+                // Lignes en-dessous
+                this.ctx.strokeStyle = strokeColor;
+                this.ctx.lineWidth = 2;
+                let lineY = staffLines[4] + 20;
+                while (lineY <= noteY + 10) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(noteX - 18, lineY);
+                    this.ctx.lineTo(noteX + 18, lineY);
+                    this.ctx.stroke();
+                    lineY += 20;
+                }
+            }
         }
     }
     
