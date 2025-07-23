@@ -139,18 +139,15 @@
             this.combo = 0;
             this.gameNotes = [];
             
-            // Variables audio avec stabilisation
+            // Variables audio avec stabilisation SIMPLE
             this.currentVolume = 0;
             this.lastDetectedFreq = 0;
             this.lastDetectedNote = null;
             
-            // NOUVEAU : Stabilisation de la détection
-            this.stableNote = null;
-            this.stableFreq = 0;
-            this.noteConfidenceCount = 0;
-            this.noteDisplayTimeout = null;
-            this.minConfidence = 3; // Note doit être détectée 3 fois de suite
-            this.displayPersistence = 200; // Note reste affichée 200ms après disparition
+            // Stabilisation simple
+            this.displayedNote = null;
+            this.displayedFreq = 0;
+            this.noteChangeTimeout = null;
             
             // Initialiser
             this.initializeElements();
@@ -219,6 +216,10 @@
                 const freqEl = document.getElementById('playedFreq');
                 
                 if (noteEl && freqEl) {
+                    // Simuler une note
+                    this.displayedNote = 'C3';
+                    this.displayedFreq = 130.81;
+                    
                     noteEl.textContent = 'Do3';
                     freqEl.textContent = '130.8 Hz';
                     this.showJudgment('perfect');
@@ -226,6 +227,8 @@
                     
                     if (!this.pitchDetectionActive) {
                         setTimeout(() => {
+                            this.displayedNote = null;
+                            this.displayedFreq = 0;
                             noteEl.textContent = '-';
                             freqEl.textContent = '- Hz';
                             this.debugStatusElement.textContent = this.microphoneActive ? 'Microphone actif' : 'En attente';
@@ -340,61 +343,38 @@
                         this.lastDetectedNote = detectedNote;
                         this.lastDetectedFreq = frequency;
                         
-                        // STABILISATION : Confirmer la note avant de l'afficher
-                        if (detectedNote === this.stableNote) {
-                            // Même note que précédemment, augmenter la confiance
-                            this.noteConfidenceCount++;
-                        } else {
-                            // Nouvelle note, réinitialiser
-                            this.noteConfidenceCount = 1;
-                        }
+                        // STABILISATION SIMPLE : Afficher immédiatement, mais avec délai pour la disparition
+                        const frenchName = getNoteFrenchName(detectedNote);
+                        const noteEl = document.getElementById('playedNote');
+                        const freqDisplayEl = document.getElementById('playedFreq');
                         
-                        // Afficher seulement si suffisamment de confiance
-                        if (this.noteConfidenceCount >= this.minConfidence) {
-                            this.stableNote = detectedNote;
-                            this.stableFreq = frequency;
+                        if (noteEl && freqDisplayEl) {
+                            this.displayedNote = detectedNote;
+                            this.displayedFreq = frequency;
+                            
+                            noteEl.textContent = frenchName;
+                            freqDisplayEl.textContent = frequency.toFixed(1) + ' Hz';
                             
                             // Annuler le timeout de disparition
-                            if (this.noteDisplayTimeout) {
-                                clearTimeout(this.noteDisplayTimeout);
-                                this.noteDisplayTimeout = null;
-                            }
-                            
-                            const frenchName = getNoteFrenchName(detectedNote);
-                            const noteEl = document.getElementById('playedNote');
-                            const freqDisplayEl = document.getElementById('playedFreq');
-                            
-                            if (noteEl && freqDisplayEl) {
-                                noteEl.textContent = frenchName;
-                                freqDisplayEl.textContent = frequency.toFixed(1) + ' Hz';
+                            if (this.noteChangeTimeout) {
+                                clearTimeout(this.noteChangeTimeout);
+                                this.noteChangeTimeout = null;
                             }
                         }
                         
                         // Vérifier correspondance avec les notes du jeu
-                        if (this.isPlaying && this.stableNote) {
-                            this.checkNoteMatch(this.stableNote, this.stableFreq);
-                        }
-                    } else {
-                        // Aucune note détectée, diminuer progressivement la confiance
-                        if (this.noteConfidenceCount > 0) {
-                            this.noteConfidenceCount--;
+                        if (this.isPlaying) {
+                            this.checkNoteMatch(detectedNote, frequency);
                         }
                     }
                 } else {
                     if (freqEl) freqEl.textContent = '0';
                     
-                    // Diminuer la confiance quand pas de son
-                    if (this.noteConfidenceCount > 0) {
-                        this.noteConfidenceCount--;
-                    }
-                    
-                    // Si silence total et pas de timeout déjà en cours
-                    if (maxAmplitude < -90 && this.stableNote && !this.noteDisplayTimeout) {
-                        // Programmer la disparition de la note avec délai
-                        this.noteDisplayTimeout = setTimeout(() => {
-                            this.stableNote = null;
-                            this.stableFreq = 0;
-                            this.noteConfidenceCount = 0;
+                    // Si silence et on a une note affichée, programmer sa disparition
+                    if (maxAmplitude < -85 && this.displayedNote && !this.noteChangeTimeout) {
+                        this.noteChangeTimeout = setTimeout(() => {
+                            this.displayedNote = null;
+                            this.displayedFreq = 0;
                             
                             const noteEl = document.getElementById('playedNote');
                             const freqDisplayEl = document.getElementById('playedFreq');
@@ -402,8 +382,8 @@
                                 noteEl.textContent = '-';
                                 freqDisplayEl.textContent = '- Hz';
                             }
-                            this.noteDisplayTimeout = null;
-                        }, this.displayPersistence);
+                            this.noteChangeTimeout = null;
+                        }, 300); // 300ms de délai
                     }
                 }
                 
@@ -497,6 +477,14 @@
             this.microphoneActive = false;
             this.pitchDetectionActive = false;
             
+            // Nettoyer les variables d'affichage
+            this.displayedNote = null;
+            this.displayedFreq = 0;
+            if (this.noteChangeTimeout) {
+                clearTimeout(this.noteChangeTimeout);
+                this.noteChangeTimeout = null;
+            }
+            
             if (this.microphone) {
                 try { this.microphone.disconnect(); } catch (e) {}
             }
@@ -564,8 +552,9 @@
             console.log(`Détection: ${this.pitchDetectionActive ? 'Active' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
             console.log(`Score: ${this.score}, Combo: ${this.combo}`);
-            console.log(`Dernière note: ${this.lastDetectedNote || 'Aucune'}`);
-            console.log(`Fréquence: ${this.lastDetectedFreq} Hz`);
+            console.log(`Note détectée: ${this.lastDetectedNote || 'Aucune'}`);
+            console.log(`Note affichée: ${this.displayedNote || 'Aucune'}`);
+            console.log(`Fréquence affichée: ${this.displayedFreq} Hz`);
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
             
@@ -783,19 +772,19 @@
         
         drawPlayedNote() {
             // Dessiner la note actuellement jouée sur la portée
-            if (!this.microphoneActive || !this.stableNote) {
+            if (!this.microphoneActive || !this.displayedNote) {
                 return;
             }
             
             // Position Y de la note sur la portée
-            let noteY = STAFF_POSITIONS[this.stableNote];
+            let noteY = STAFF_POSITIONS[this.displayedNote];
             
             // Si la note n'est pas dans la table, calculer sa position
             if (noteY === undefined) {
-                console.warn(`Position non définie pour ${this.stableNote}, calcul automatique`);
+                console.warn(`Position non définie pour ${this.displayedNote}, calcul automatique`);
                 // Calculer la position basée sur la fréquence (fallback)
                 const baseFreq = NOTE_FREQUENCIES['C3'] || 130.81;
-                const currentFreq = NOTE_FREQUENCIES[this.stableNote] || this.stableFreq;
+                const currentFreq = NOTE_FREQUENCIES[this.displayedNote] || this.displayedFreq;
                 const semitonesFromC3 = Math.round(12 * Math.log2(currentFreq / baseFreq));
                 noteY = 130 - (semitonesFromC3 * 10); // 10 pixels par demi-ton
             }
@@ -834,14 +823,14 @@
             this.ctx.textBaseline = 'middle';
             
             // Contour noir pour lisibilité
-            this.ctx.strokeText(getNoteFrenchName(this.stableNote), noteX, noteY - 25);
+            this.ctx.strokeText(getNoteFrenchName(this.displayedNote), noteX, noteY - 25);
             // Texte blanc par-dessus
-            this.ctx.fillText(getNoteFrenchName(this.stableNote), noteX, noteY - 25);
+            this.ctx.fillText(getNoteFrenchName(this.displayedNote), noteX, noteY - 25);
             
             // Indicateur de fréquence précise (petit texte)
             this.ctx.font = '10px Arial';
             this.ctx.fillStyle = '#CCCCCC';
-            this.ctx.fillText(`${this.stableFreq.toFixed(1)} Hz`, noteX, noteY + 25);
+            this.ctx.fillText(`${this.displayedFreq.toFixed(1)} Hz`, noteX, noteY + 25);
         }
         
         drawLedgerLinesForPlayedNote(noteX, noteY, strokeColor) {
