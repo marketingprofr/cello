@@ -286,12 +286,13 @@
             this.microphone = this.audioContext.createMediaStreamSource(stream);
             this.analyser = this.audioContext.createAnalyser();
             
-            this.analyser.fftSize = 4096;
-            this.analyser.smoothingTimeConstant = 0.3;
-            this.analyser.minDecibels = -90;
+            this.analyser.fftSize = 8192;  // Plus de résolution pour meilleure précision
+            this.analyser.smoothingTimeConstant = 0.1;  // Moins de lissage
+            this.analyser.minDecibels = -100;
             this.analyser.maxDecibels = -10;
             
             this.dataArray = new Float32Array(this.analyser.frequencyBinCount);
+            this.timeDomainArray = new Float32Array(this.analyser.fftSize); // Pour autocorrélation
             this.microphone.connect(this.analyser);
             this.microphoneActive = true;
             
@@ -313,65 +314,67 @@
             }
             
             try {
-                this.analyser.getFloatFrequencyData(this.dataArray);
+                // Obtenir les données temporelles pour l'autocorrélation
+                this.analyser.getFloatTimeDomainData(this.timeDomainArray);
                 
-                let maxAmplitude = -Infinity;
-                let maxIndex = 0;
-                
-                for (let i = 5; i < this.dataArray.length / 2; i++) {
-                    if (this.dataArray[i] > maxAmplitude) {
-                        maxAmplitude = this.dataArray[i];
-                        maxIndex = i;
-                    }
+                // Calculer le volume (RMS)
+                let rms = 0;
+                for (let i = 0; i < this.timeDomainArray.length; i++) {
+                    rms += this.timeDomainArray[i] * this.timeDomainArray[i];
                 }
+                rms = Math.sqrt(rms / this.timeDomainArray.length);
+                const volume = 20 * Math.log10(rms + 1e-10); // Convertir en dB
                 
-                this.currentVolume = Math.round(maxAmplitude);
+                this.currentVolume = Math.round(volume);
                 
                 const volEl = document.getElementById('volume');
                 const freqEl = document.getElementById('frequency');
                 if (volEl) volEl.textContent = this.currentVolume;
                 
-                if (maxAmplitude > -75) {
-                    const sampleRate = this.audioContext.sampleRate;
-                    const frequency = (maxIndex * sampleRate) / this.analyser.fftSize;
-                    this.lastDetectedFreq = frequency;
+                // Seuil pour détecter une note (ajusté pour le volume RMS)
+                if (volume > -60) {  // Seuil ajusté pour RMS
+                    // Utiliser l'autocorrélation pour trouver la fréquence fondamentale
+                    const frequency = this.detectFundamentalFrequency(this.timeDomainArray);
                     
-                    if (freqEl) freqEl.textContent = frequency.toFixed(1);
-                    
-                    const detectedNote = this.frequencyToNote(frequency);
-                    if (detectedNote) {
-                        this.lastDetectedNote = detectedNote;
+                    if (frequency > 0) {
                         this.lastDetectedFreq = frequency;
+                        if (freqEl) freqEl.textContent = frequency.toFixed(1);
                         
-                        // STABILISATION SIMPLE : Afficher immédiatement, mais avec délai pour la disparition
-                        const frenchName = getNoteFrenchName(detectedNote);
-                        const noteEl = document.getElementById('playedNote');
-                        const freqDisplayEl = document.getElementById('playedFreq');
-                        
-                        if (noteEl && freqDisplayEl) {
-                            this.displayedNote = detectedNote;
-                            this.displayedFreq = frequency;
+                        const detectedNote = this.frequencyToNote(frequency);
+                        if (detectedNote) {
+                            this.lastDetectedNote = detectedNote;
+                            this.lastDetectedFreq = frequency;
                             
-                            noteEl.textContent = frenchName;
-                            freqDisplayEl.textContent = frequency.toFixed(1) + ' Hz';
+                            // Afficher immédiatement
+                            const frenchName = getNoteFrenchName(detectedNote);
+                            const noteEl = document.getElementById('playedNote');
+                            const freqDisplayEl = document.getElementById('playedFreq');
                             
-                            // Annuler le timeout de disparition
-                            if (this.noteChangeTimeout) {
-                                clearTimeout(this.noteChangeTimeout);
-                                this.noteChangeTimeout = null;
+                            if (noteEl && freqDisplayEl) {
+                                this.displayedNote = detectedNote;
+                                this.displayedFreq = frequency;
+                                
+                                noteEl.textContent = frenchName;
+                                freqDisplayEl.textContent = frequency.toFixed(1) + ' Hz';
+                                
+                                // Annuler le timeout de disparition
+                                if (this.noteChangeTimeout) {
+                                    clearTimeout(this.noteChangeTimeout);
+                                    this.noteChangeTimeout = null;
+                                }
                             }
-                        }
-                        
-                        // Vérifier correspondance avec les notes du jeu
-                        if (this.isPlaying) {
-                            this.checkNoteMatch(detectedNote, frequency);
+                            
+                            // Vérifier correspondance avec les notes du jeu
+                            if (this.isPlaying) {
+                                this.checkNoteMatch(detectedNote, frequency);
+                            }
                         }
                     }
                 } else {
                     if (freqEl) freqEl.textContent = '0';
                     
                     // Si silence et on a une note affichée, programmer sa disparition
-                    if (maxAmplitude < -85 && this.displayedNote && !this.noteChangeTimeout) {
+                    if (this.displayedNote && !this.noteChangeTimeout) {
                         this.noteChangeTimeout = setTimeout(() => {
                             this.displayedNote = null;
                             this.displayedFreq = 0;
@@ -383,7 +386,7 @@
                                 freqDisplayEl.textContent = '- Hz';
                             }
                             this.noteChangeTimeout = null;
-                        }, 300); // 300ms de délai
+                        }, 300);
                     }
                 }
                 
@@ -394,19 +397,104 @@
             requestAnimationFrame(() => this.detectPitch());
         }
         
+        // Détection de fréquence fondamentale par autocorrélation (YIN algorithm simplifié)
+        detectFundamentalFrequency(buffer) {
+            const sampleRate = this.audioContext.sampleRate;
+            const bufferSize = buffer.length;
+            
+            // Plage de fréquences pour violoncelle (60 Hz à 1000 Hz)
+            const minPeriod = Math.floor(sampleRate / 1000); // 1000 Hz max
+            const maxPeriod = Math.floor(sampleRate / 60);   // 60 Hz min
+            
+            let bestPeriod = 0;
+            let minError = Infinity;
+            
+            // Autocorrélation simplifiée
+            for (let period = minPeriod; period < Math.min(maxPeriod, bufferSize / 2); period++) {
+                let error = 0;
+                let count = 0;
+                
+                // Calculer l'erreur pour cette période
+                for (let i = 0; i < bufferSize - period; i++) {
+                    const diff = buffer[i] - buffer[i + period];
+                    error += diff * diff;
+                    count++;
+                }
+                
+                if (count > 0) {
+                    error = error / count;
+                    
+                    // Normalisation YIN (optionnelle mais améliore la précision)
+                    if (period > minPeriod) {
+                        error = error / (1 + error);
+                    }
+                    
+                    if (error < minError) {
+                        minError = error;
+                        bestPeriod = period;
+                    }
+                }
+            }
+            
+            // Convertir la période en fréquence
+            if (bestPeriod > 0 && minError < 0.3) { // Seuil de confiance
+                // Interpolation parabolique pour améliorer la précision
+                let refinedPeriod = bestPeriod;
+                
+                if (bestPeriod > minPeriod + 1 && bestPeriod < maxPeriod - 1) {
+                    // Calculer les erreurs des périodes adjacentes
+                    const y1 = this.calculatePeriodError(buffer, bestPeriod - 1);
+                    const y2 = minError;
+                    const y3 = this.calculatePeriodError(buffer, bestPeriod + 1);
+                    
+                    // Interpolation parabolique
+                    const a = (y1 - 2 * y2 + y3) / 2;
+                    const b = (y3 - y1) / 2;
+                    
+                    if (a !== 0) {
+                        const peakOffset = -b / (2 * a);
+                        if (Math.abs(peakOffset) < 1) {
+                            refinedPeriod = bestPeriod + peakOffset;
+                        }
+                    }
+                }
+                
+                return sampleRate / refinedPeriod;
+            }
+            
+            return 0; // Pas de fréquence détectée
+        }
+        
+        // Fonction helper pour l'interpolation
+        calculatePeriodError(buffer, period) {
+            let error = 0;
+            let count = 0;
+            
+            for (let i = 0; i < buffer.length - period; i++) {
+                const diff = buffer[i] - buffer[i + period];
+                error += diff * diff;
+                count++;
+            }
+            
+            return count > 0 ? error / count : Infinity;
+        }
+        
         frequencyToNote(frequency) {
             let closestNote = null;
             let minDifference = Infinity;
+            let centsDifference = 0;
             
             for (const [note, freq] of Object.entries(NOTE_FREQUENCIES)) {
                 const difference = Math.abs(frequency - freq);
                 if (difference < minDifference) {
                     minDifference = difference;
                     closestNote = note;
+                    centsDifference = Math.abs(1200 * Math.log2(frequency / freq));
                 }
             }
             
-            if (closestNote && minDifference < NOTE_FREQUENCIES[closestNote] * 0.15) {
+            // Tolérance plus stricte : 50 cents maximum (1/4 de ton)
+            if (closestNote && centsDifference < 50) {
                 return closestNote;
             }
             
