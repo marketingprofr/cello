@@ -397,7 +397,7 @@
             requestAnimationFrame(() => this.detectPitch());
         }
         
-        // Détection de fréquence fondamentale par autocorrélation (YIN algorithm simplifié)
+        // Détection de fréquence fondamentale par autocorrélation YIN améliorée
         detectFundamentalFrequency(buffer) {
             const sampleRate = this.audioContext.sampleRate;
             const bufferSize = buffer.length;
@@ -406,77 +406,99 @@
             const minPeriod = Math.floor(sampleRate / 1000); // 1000 Hz max
             const maxPeriod = Math.floor(sampleRate / 60);   // 60 Hz min
             
-            let bestPeriod = 0;
-            let minError = Infinity;
+            // Calcul de la différence cumulative moyenne normalisée (CMND) - algorithme YIN
+            const yinBuffer = new Array(maxPeriod);
+            yinBuffer[0] = 1;
             
-            // Autocorrélation simplifiée
-            for (let period = minPeriod; period < Math.min(maxPeriod, bufferSize / 2); period++) {
-                let error = 0;
-                let count = 0;
-                
-                // Calculer l'erreur pour cette période
-                for (let i = 0; i < bufferSize - period; i++) {
-                    const diff = buffer[i] - buffer[i + period];
-                    error += diff * diff;
-                    count++;
-                }
-                
-                if (count > 0) {
-                    error = error / count;
-                    
-                    // Normalisation YIN (optionnelle mais améliore la précision)
-                    if (period > minPeriod) {
-                        error = error / (1 + error);
-                    }
-                    
-                    if (error < minError) {
-                        minError = error;
-                        bestPeriod = period;
-                    }
+            // Étape 1: Calcul de la différence
+            for (let tau = 1; tau < maxPeriod; tau++) {
+                yinBuffer[tau] = 0;
+                for (let i = 0; i < bufferSize - maxPeriod; i++) {
+                    const delta = buffer[i] - buffer[i + tau];
+                    yinBuffer[tau] += delta * delta;
                 }
             }
             
-            // Convertir la période en fréquence
-            if (bestPeriod > 0 && minError < 0.3) { // Seuil de confiance
-                // Interpolation parabolique pour améliorer la précision
-                let refinedPeriod = bestPeriod;
-                
-                if (bestPeriod > minPeriod + 1 && bestPeriod < maxPeriod - 1) {
-                    // Calculer les erreurs des périodes adjacentes
-                    const y1 = this.calculatePeriodError(buffer, bestPeriod - 1);
-                    const y2 = minError;
-                    const y3 = this.calculatePeriodError(buffer, bestPeriod + 1);
-                    
-                    // Interpolation parabolique
-                    const a = (y1 - 2 * y2 + y3) / 2;
-                    const b = (y3 - y1) / 2;
-                    
-                    if (a !== 0) {
-                        const peakOffset = -b / (2 * a);
-                        if (Math.abs(peakOffset) < 1) {
-                            refinedPeriod = bestPeriod + peakOffset;
+            // Étape 2: Différence cumulative moyenne normalisée
+            let runningSum = 0;
+            for (let tau = 1; tau < maxPeriod; tau++) {
+                runningSum += yinBuffer[tau];
+                if (runningSum === 0) {
+                    yinBuffer[tau] = 1;
+                } else {
+                    yinBuffer[tau] = yinBuffer[tau] * tau / runningSum;
+                }
+            }
+            
+            // Étape 3: Recherche du minimum absolu avec seuil
+            const threshold = 0.15; // Seuil YIN standard
+            let bestTau = 0;
+            let minValue = 1;
+            
+            // Chercher le premier minimum en dessous du seuil
+            for (let tau = minPeriod; tau < maxPeriod; tau++) {
+                if (yinBuffer[tau] < threshold) {
+                    // Vérifier que c'est un minimum local
+                    if (tau === 0 || yinBuffer[tau] < yinBuffer[tau - 1]) {
+                        // Chercher la fin du minimum local
+                        while (tau + 1 < maxPeriod && yinBuffer[tau + 1] < yinBuffer[tau]) {
+                            tau++;
                         }
+                        bestTau = tau;
+                        break;
                     }
                 }
                 
-                return sampleRate / refinedPeriod;
+                // Garder en mémoire le minimum global au cas où
+                if (yinBuffer[tau] < minValue) {
+                    minValue = yinBuffer[tau];
+                    bestTau = tau;
+                }
             }
             
-            return 0; // Pas de fréquence détectée
-        }
-        
-        // Fonction helper pour l'interpolation
-        calculatePeriodError(buffer, period) {
-            let error = 0;
-            let count = 0;
-            
-            for (let i = 0; i < buffer.length - period; i++) {
-                const diff = buffer[i] - buffer[i + period];
-                error += diff * diff;
-                count++;
+            // Si pas de minimum sous le seuil, utiliser le minimum global
+            if (bestTau === 0 || minValue > 0.5) {
+                return 0; // Pas assez fiable
             }
             
-            return count > 0 ? error / count : Infinity;
+            // Étape 4: Interpolation parabolique pour plus de précision
+            let refinedTau = bestTau;
+            if (bestTau > 0 && bestTau < maxPeriod - 1) {
+                const y1 = yinBuffer[bestTau - 1];
+                const y2 = yinBuffer[bestTau];
+                const y3 = yinBuffer[bestTau + 1];
+                
+                const a = (y1 - 2 * y2 + y3) / 2;
+                const b = (y3 - y1) / 2;
+                
+                if (a !== 0) {
+                    const peakOffset = -b / (2 * a);
+                    if (Math.abs(peakOffset) < 1) {
+                        refinedTau = bestTau + peakOffset;
+                    }
+                }
+            }
+            
+            const fundamentalFreq = sampleRate / refinedTau;
+            
+            // Étape 5: Vérification anti-octave inférieure
+            // Si on détecte une fréquence, vérifier si l'octave supérieure est plus probable
+            if (fundamentalFreq > 0 && fundamentalFreq < 500) {
+                const doubleFreq = fundamentalFreq * 2;
+                const doublePeriod = sampleRate / doubleFreq;
+                
+                if (doublePeriod >= minPeriod && doublePeriod < maxPeriod) {
+                    const doubleIndex = Math.round(doublePeriod);
+                    
+                    // Comparer la confiance des deux fréquences
+                    if (doubleIndex < yinBuffer.length && yinBuffer[doubleIndex] < yinBuffer[bestTau] * 1.2) {
+                        // L'octave supérieure est plus probable
+                        return doubleFreq;
+                    }
+                }
+            }
+            
+            return fundamentalFreq;
         }
         
         frequencyToNote(frequency) {
@@ -635,18 +657,32 @@
         }
         
         showDebugInfo() {
-            console.log('🔧 DEBUG INFO:');
+            console.log('🔧 DEBUG INFO v2.3.8 - PRÉCISION ACCORDEUR:');
             console.log(`Microphone: ${this.microphoneActive ? 'Actif' : 'Inactif'}`);
-            console.log(`Détection: ${this.pitchDetectionActive ? 'Active' : 'Inactive'}`);
+            console.log(`Détection: ${this.pitchDetectionActive ? 'Active (Autocorrélation)' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
             console.log(`Score: ${this.score}, Combo: ${this.combo}`);
             console.log(`Note détectée: ${this.lastDetectedNote || 'Aucune'}`);
             console.log(`Note affichée: ${this.displayedNote || 'Aucune'}`);
-            console.log(`Fréquence affichée: ${this.displayedFreq} Hz`);
+            console.log(`Fréquence mesurée: ${this.displayedFreq.toFixed(2)} Hz`);
+            
+            // Comparaison avec les fréquences théoriques
+            if (this.displayedNote && NOTE_FREQUENCIES[this.displayedNote]) {
+                const theoreticalFreq = NOTE_FREQUENCIES[this.displayedNote];
+                const actualFreq = this.displayedFreq;
+                const centsDiff = 1200 * Math.log2(actualFreq / theoreticalFreq);
+                
+                console.log(`🎯 COMPARAISON ACCORDEUR:`);
+                console.log(`  ${this.displayedNote} théorique: ${theoreticalFreq.toFixed(2)} Hz`);
+                console.log(`  ${this.displayedNote} mesurée: ${actualFreq.toFixed(2)} Hz`);
+                console.log(`  Différence: ${centsDiff.toFixed(1)} cents`);
+                console.log(`  Statut: ${Math.abs(centsDiff) < 10 ? '✅ Accordé' : Math.abs(centsDiff) < 25 ? '⚠️ Proche' : '❌ Désaccordé'}`);
+            }
+            
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
             
-            this.debugStatusElement.textContent = 'Debug affiché en console (F12)';
+            this.debugStatusElement.textContent = 'Debug accordeur affiché en console (F12)';
         }
         
         setupCanvas() {
