@@ -286,9 +286,9 @@
             this.microphone = this.audioContext.createMediaStreamSource(stream);
             this.analyser = this.audioContext.createAnalyser();
             
-            this.analyser.fftSize = 8192;  // Plus de résolution pour meilleure précision
-            this.analyser.smoothingTimeConstant = 0.1;  // Moins de lissage
-            this.analyser.minDecibels = -100;
+            this.analyser.fftSize = 16384;  // Encore plus de résolution pour les graves
+            this.analyser.smoothingTimeConstant = 0.05;  // Moins de lissage
+            this.analyser.minDecibels = -110;  // Plus sensible
             this.analyser.maxDecibels = -10;
             
             this.dataArray = new Float32Array(this.analyser.frequencyBinCount);
@@ -397,26 +397,31 @@
             requestAnimationFrame(() => this.detectPitch());
         }
         
-        // Détection de fréquence fondamentale par autocorrélation YIN améliorée
+        // Détection de fréquence fondamentale optimisée pour les notes graves
         detectFundamentalFrequency(buffer) {
             const sampleRate = this.audioContext.sampleRate;
             const bufferSize = buffer.length;
             
-            // Plage de fréquences pour violoncelle (60 Hz à 1000 Hz)
-            const minPeriod = Math.floor(sampleRate / 1000); // 1000 Hz max
-            const maxPeriod = Math.floor(sampleRate / 60);   // 60 Hz min
+            // Plage étendue pour violoncelle graves (50 Hz à 1200 Hz)
+            const minPeriod = Math.floor(sampleRate / 1200); // 1200 Hz max
+            const maxPeriod = Math.floor(sampleRate / 50);   // 50 Hz min (plus bas pour Do grave)
             
-            // Calcul de la différence cumulative moyenne normalisée (CMND) - algorithme YIN
+            // Calcul YIN avec ajustements pour les graves
             const yinBuffer = new Array(maxPeriod);
             yinBuffer[0] = 1;
             
-            // Étape 1: Calcul de la différence
-            for (let tau = 1; tau < maxPeriod; tau++) {
+            // Étape 1: Calcul de la différence avec fenêtrage
+            for (let tau = 1; tau < maxPeriod && tau < bufferSize / 2; tau++) {
                 yinBuffer[tau] = 0;
-                for (let i = 0; i < bufferSize - maxPeriod; i++) {
+                const windowSize = Math.min(bufferSize - tau, bufferSize * 0.8); // Fenêtre adaptive
+                
+                for (let i = 0; i < windowSize; i++) {
                     const delta = buffer[i] - buffer[i + tau];
                     yinBuffer[tau] += delta * delta;
                 }
+                
+                // Normaliser par la taille de fenêtre
+                yinBuffer[tau] /= windowSize;
             }
             
             // Étape 2: Différence cumulative moyenne normalisée
@@ -430,43 +435,90 @@
                 }
             }
             
-            // Étape 3: Recherche du minimum absolu avec seuil
-            const threshold = 0.15; // Seuil YIN standard
-            let bestTau = 0;
-            let minValue = 1;
+            // Étape 3: Recherche adaptative selon la fréquence
+            const candidates = [];
             
-            // Chercher le premier minimum en dessous du seuil
+            // Seuils adaptatifs selon la fréquence
+            const getThreshold = (tau) => {
+                const freq = sampleRate / tau;
+                if (freq < 100) return 0.25;  // Plus tolérant pour les graves
+                if (freq < 200) return 0.20;  // Moyennement tolérant 
+                return 0.15;  // Standard pour les aigus
+            };
+            
+            // Chercher tous les candidats
             for (let tau = minPeriod; tau < maxPeriod; tau++) {
+                const threshold = getThreshold(tau);
+                
                 if (yinBuffer[tau] < threshold) {
                     // Vérifier que c'est un minimum local
-                    if (tau === 0 || yinBuffer[tau] < yinBuffer[tau - 1]) {
-                        // Chercher la fin du minimum local
-                        while (tau + 1 < maxPeriod && yinBuffer[tau + 1] < yinBuffer[tau]) {
-                            tau++;
+                    if ((tau === minPeriod || yinBuffer[tau] <= yinBuffer[tau - 1]) &&
+                        (tau === maxPeriod - 1 || yinBuffer[tau] <= yinBuffer[tau + 1])) {
+                        
+                        candidates.push({
+                            tau: tau,
+                            value: yinBuffer[tau],
+                            freq: sampleRate / tau
+                        });
+                    }
+                }
+            }
+            
+            if (candidates.length === 0) {
+                return 0; // Pas de candidats fiables
+            }
+            
+            // Étape 4: Validation harmonique pour les graves
+            let bestCandidate = candidates[0];
+            
+            if (bestCandidate.freq < 150) {  // Pour les notes graves
+                // Vérifier la présence d'harmoniques
+                const fundamental = bestCandidate.freq;
+                let harmonicScore = 0;
+                
+                // Chercher les harmoniques 2x, 3x, 4x
+                for (let harmonic = 2; harmonic <= 4; harmonic++) {
+                    const harmonicFreq = fundamental * harmonic;
+                    const harmonicPeriod = sampleRate / harmonicFreq;
+                    
+                    if (harmonicPeriod >= minPeriod && harmonicPeriod < maxPeriod) {
+                        const harmonicIndex = Math.round(harmonicPeriod);
+                        if (harmonicIndex < yinBuffer.length && yinBuffer[harmonicIndex] < 0.3) {
+                            harmonicScore += (1.0 / harmonic); // Pondération décroissante
                         }
-                        bestTau = tau;
-                        break;
                     }
                 }
                 
-                // Garder en mémoire le minimum global au cas où
-                if (yinBuffer[tau] < minValue) {
-                    minValue = yinBuffer[tau];
-                    bestTau = tau;
+                // Si peu d'harmoniques détectées, vérifier si c'est un sous-harmonique
+                if (harmonicScore < 0.5) {
+                    // Chercher la fondamentale potentielle (octave supérieure)
+                    const possibleFundamental = fundamental * 2;
+                    const fundamentalPeriod = sampleRate / possibleFundamental;
+                    
+                    if (fundamentalPeriod >= minPeriod) {
+                        const fundamentalIndex = Math.round(fundamentalPeriod);
+                        if (fundamentalIndex < yinBuffer.length && 
+                            yinBuffer[fundamentalIndex] < bestCandidate.value * 1.5) {
+                            
+                            // L'octave supérieure semble plus probable
+                            bestCandidate = {
+                                tau: fundamentalIndex,
+                                value: yinBuffer[fundamentalIndex],
+                                freq: possibleFundamental
+                            };
+                        }
+                    }
                 }
             }
             
-            // Si pas de minimum sous le seuil, utiliser le minimum global
-            if (bestTau === 0 || minValue > 0.5) {
-                return 0; // Pas assez fiable
-            }
+            // Étape 5: Interpolation parabolique
+            let refinedTau = bestCandidate.tau;
+            const tau = bestCandidate.tau;
             
-            // Étape 4: Interpolation parabolique pour plus de précision
-            let refinedTau = bestTau;
-            if (bestTau > 0 && bestTau < maxPeriod - 1) {
-                const y1 = yinBuffer[bestTau - 1];
-                const y2 = yinBuffer[bestTau];
-                const y3 = yinBuffer[bestTau + 1];
+            if (tau > minPeriod && tau < maxPeriod - 1) {
+                const y1 = yinBuffer[tau - 1];
+                const y2 = yinBuffer[tau];
+                const y3 = yinBuffer[tau + 1];
                 
                 const a = (y1 - 2 * y2 + y3) / 2;
                 const b = (y3 - y1) / 2;
@@ -474,31 +526,19 @@
                 if (a !== 0) {
                     const peakOffset = -b / (2 * a);
                     if (Math.abs(peakOffset) < 1) {
-                        refinedTau = bestTau + peakOffset;
+                        refinedTau = tau + peakOffset;
                     }
                 }
             }
             
-            const fundamentalFreq = sampleRate / refinedTau;
+            const finalFreq = sampleRate / refinedTau;
             
-            // Étape 5: Vérification anti-octave inférieure
-            // Si on détecte une fréquence, vérifier si l'octave supérieure est plus probable
-            if (fundamentalFreq > 0 && fundamentalFreq < 500) {
-                const doubleFreq = fundamentalFreq * 2;
-                const doublePeriod = sampleRate / doubleFreq;
-                
-                if (doublePeriod >= minPeriod && doublePeriod < maxPeriod) {
-                    const doubleIndex = Math.round(doublePeriod);
-                    
-                    // Comparer la confiance des deux fréquences
-                    if (doubleIndex < yinBuffer.length && yinBuffer[doubleIndex] < yinBuffer[bestTau] * 1.2) {
-                        // L'octave supérieure est plus probable
-                        return doubleFreq;
-                    }
-                }
+            // Validation finale : la fréquence doit être dans une plage raisonnable
+            if (finalFreq < 50 || finalFreq > 1200) {
+                return 0;
             }
             
-            return fundamentalFreq;
+            return finalFreq;
         }
         
         frequencyToNote(frequency) {
