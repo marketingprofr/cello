@@ -1,273 +1,203 @@
-# 🎻 Cello Rhythm Game - Ave Maria v2.3.2
+# 🎻 Cello Rhythm Game - Ave Maria v2.4.0
 
 Un jeu de rythme musical interactif pour violoncelle basé sur l'Ave Maria de Gounod. Le jeu détecte les notes jouées en temps réel via le microphone et évalue la précision du joueur.
 
-**Version actuelle : v2.3.2** - CORRECTIF SYNTAXE - Erreur JavaScript corrigée
+**Version actuelle : v2.4.0** - DURÉES PROPORTIONNELLES - Ave Maria complète avec durées visuelles
 
-## 🚨 Correctif v2.3.2
-- **🔧 CORRECTIF SYNTAXE** : Erreur JavaScript "Unexpected identifier 'info'" corrigée
-- **✅ Code nettoyé** : Toutes les fonctions vérifiées et reformatées
-- **🎯 Fonctionnement garanti** : Plus d'erreur de syntaxe
+## 🎼 Nouveautés v2.4.0
+- **🎵 Ave Maria complète** : Mélodie entière de Gounod (39 notes)
+- **📏 Durées visuelles** : Largeur des notes proportionnelle à leur durée musicale
+- **📁 Fichier séparé** : `melody.js` contient toute la mélodie
+- **🎶 Notation standard** : Double croche = 1, Croche = 2, Noire = 4, etc.
 
-## 🚨 Correctif v2.3.1
-- **🔧 CORRECTIF CACHE** : Problème "playedOctave manquant" résolu
-- **✅ Éléments mis à jour** : Nouveau format "Do3 + Hz" garanti
-- **🔄 Instructions claires** : Guide Ctrl+F5 pour forcer la mise à jour
-
-## 🆕 Nouveautés v2.3
-- **🎤 Mode accordage permanent** : Activez le micro pour accorder avant de jouer
-- **📱 Affichage amélioré** : "Do3" + "130.8 Hz" au lieu de "Do" / "3" séparés
-- **🎯 Boutons séparés** : Micro indépendant du jeu
-- **⚙️ Accordage facile** : Voir les notes détectées en temps réel
-
-## 🚨 Correctif v2.2.1
-- **🔧 CORRECTIF CRITIQUE** : Fonctions `drawLedgerLines` et `checkMissedNotes` manquantes
-- **✅ Tout fonctionne à nouveau** : Notes visibles + détection audio
-- **🛡️ Gestion d'erreur renforcée** : Plus de plantages
+## 🔧 Corrections v2.3.x précédentes
+- **v2.3.9** : Détection optimisée pour les notes graves du violoncelle
+- **v2.3.8** : Algorithme YIN précis comme un accordeur professionnel  
+- **v2.3.7** : Jeu complet avec notes sur portée en temps réel
+- **v2.3.6** : Stabilisation de la détection (plus de clignotement)
 
 ## 🎮 Fonctionnalités
 
-- **Détection audio en temps réel** : Utilise l'API Web Audio pour détecter les notes jouées au violoncelle
-- **Portée musicale défilante** : Notes en clé de Fa avec défilement horizontal
-- **Système de jugement** : Perfect (±25 cents), OK (±50 cents), Miss (>50 cents)
-- **Score et combo** : Système de points avec bonus de combo
-- **Interface moderne** : Design sombre avec animations fluides
-- **Mélodie classique** : Ave Maria de Gounod adaptée pour violoncelle
+### 🎼 Musique et notation
+- **Ave Maria de Gounod** complète transcrite pour violoncelle
+- **Durées proportionnelles** : Les notes longues sont visuellement plus larges
+- **Clé de fa** adaptée au registre du violoncelle
+- **39 notes** couvrant toute la prière
 
-## 🚀 Installation
+### 🎯 Détection audio ultra-précise
+- **Algorithme YIN** : Détection de pitch professionelle
+- **Optimisé graves** : Spécialement calibré pour les cordes graves du violoncelle
+- **Tolérance 50 cents** : Précision d'accordeur professionnel
+- **Anti-octave** : Détecte la vraie fondamentale, pas les harmoniques
 
-### Option 1: Drag & Drop sur GitHub Pages
-
-1. **Créer un nouveau repository sur GitHub**
-2. **Uploader les fichiers** : Glissez-déposez tous les fichiers dans votre repository
-3. **Activer GitHub Pages** :
-   - Allez dans Settings → Pages
-   - Source: Deploy from a branch
-   - Branch: main / master
-   - Folder: / (root)
-4. **Accéder au jeu** : Votre jeu sera disponible à `https://votreusername.github.io/nom-du-repo`
-
-### Option 2: Serveur local
-
-```bash
-# Cloner ou télécharger les fichiers
-# Puis servir avec un serveur HTTP simple
-
-# Python 3
-python -m http.server 8000
-
-# Python 2
-python -m SimpleHTTPServer 8000
-
-# Node.js (avec http-server)
-npx http-server
-
-# Puis ouvrir http://localhost:8000
-```
+### 🎨 Interface visuelle
+- **Notes proportionnelles** : Double croche = fine, Ronde = large
+- **Note jouée en temps réel** : Jaune brillant sur la ligne de jeu
+- **Portée complète** : Notes graves et aiguës avec lignes supplémentaires
+- **Système de score** : Perfect/OK/Miss avec combo
 
 ## 📁 Structure des fichiers
 
 ```
 cello-rhythm-game/
 ├── index.html          # Page principale
-├── style.css           # Styles et animations
-├── script.js           # Logique principale du jeu
-├── notes.js            # Données musicales (Ave Maria)
+├── style.css           # Styles et animations  
+├── melody.js           # Ave Maria complète avec durées
+├── script.js           # Moteur de jeu et détection audio
 └── README.md           # Ce fichier
+```
+
+## 🚀 Installation
+
+### Option 1: GitHub Pages (Recommandée)
+
+1. **Créer un repository** sur GitHub
+2. **Uploader les 4 fichiers** : `index.html`, `style.css`, `melody.js`, `script.js`
+3. **Activer Pages** : Settings → Pages → Branch: main
+4. **Accéder** : `https://votreusername.github.io/nom-du-repo`
+
+### Option 2: Serveur local
+
+```bash
+# Télécharger tous les fichiers dans un dossier
+# Puis servir avec un serveur HTTP
+
+# Python 3
+python -m http.server 8000
+
+# Node.js
+npx http-server
+
+# Puis ouvrir http://localhost:8000
 ```
 
 ## 🎵 Comment jouer
 
-1. **Démarrer** : Cliquez sur "Commencer"
-2. **Autoriser le microphone** : Acceptez l'accès microphone quand demandé
-3. **Jouer les notes** : Les notes défilent de droite à gauche
-4. **Timing** : Jouez chaque note quand elle atteint la ligne rouge verticale
-5. **Précision** : Plus vous êtes précis en intonation, plus vous gagnez de points
+### 🎤 Mode accordage
+1. **"🎤 Activer Microphone"** → Accepter les permissions
+2. **Jouer des notes** → Voir l'affichage en temps réel
+3. **Vérifier l'accordage** → Utiliser comme accordeur précis
 
-### Système de scoring
+### 🎮 Mode jeu complet
+1. **"Commencer le jeu"** → Ave Maria démarre
+2. **Voir les notes arriver** de droite à gauche
+3. **Jouer au bon moment** quand elles atteignent la ligne rouge
+4. **Notes longues** = rectangles larges, **notes courtes** = cercles
 
-- **Perfect** : ±25 cents → 100 points + bonus combo
-- **OK** : ±50 cents → 50 points + bonus combo réduit  
-- **Miss** : >50 cents ou timing raté → 0 points, combo reset
+### 🎯 Système de scoring
+- **Perfect** (±25 cents) = 100 points + bonus combo
+- **OK** (±35 cents) = 50 points + bonus combo réduit
+- **Miss** = 0 points, combo reset
 
-## 🔍 Vérification des versions
-
-### Interface utilisateur
-- **Titre principal** : Le numéro de version apparaît à côté du titre
-- **Pied de page** : Affiche la version et la date de mise à jour
-- **Statut fichiers** : Indique si tous les fichiers sont bien chargés
-
-### Console développeur (F12)
-```
-🎻 Cello Rhythm Game v2.1 - DOM fully loaded
-📋 Vérification des fichiers v2.1:
-✅ notes.js: OK
-✅ style.css: OK  
-✅ HTML: OK
-✅ script.js: OK
-📊 État global: ✅ Tous les fichiers OK
-```
-
-### Historique des versions
-- **v2.3.2** : 🔧 CORRECTIF SYNTAXE - Erreur JavaScript "Unexpected identifier" corrigée
-- **v2.3.1** : 🔧 CORRECTIF CACHE - Erreur "playedOctave manquant" corrigée
-- **v2.3** : 🎤 Mode accordage permanent + affichage amélioré (Do3 + Hz)
-- **v2.2.1** : 🚨 CORRECTIF URGENT - Fonctions manquantes corrigées
-- **v2.2** : Audio ultra-sensible + notes toujours visibles + badge version
-- **v2.1** : Système de versioning + robustesse améliorée  
-- **v2.0** : Gestion d'erreurs complète + debug étendu
-- **v1.0** : Version initiale
-
-## ⚙️ Configuration technique
-
-### Prérequis
-- Navigateur moderne supportant Web Audio API
-- Microphone fonctionnel
-- HTTPS recommandé pour l'accès microphone
-
-### Paramètres modifiables (dans `notes.js`)
-
-```javascript
-const GAME_CONFIG = {
-    scrollSpeed: 60,         // Vitesse de défilement (pixels/sec)
-    hitLineX: 150,          // Position de la ligne de jugement
-    perfectThreshold: 35,    // Seuil "perfect" en cents (plus tolérant)
-    okThreshold: 75,        // Seuil "ok" en cents (beaucoup plus tolérant)
-    judgmentWindow: 500     // Fenêtre de timing (ms) - plus large
-};
-```
-
-### Gamme de fréquences détectées
-- **Plage** : 60-800 Hz (étendue pour violoncelle)
-- **Notes** : Do2 (65.41 Hz) à Do5 (523.25 Hz)
-- **Résolution** : Analyse FFT 8192 points (haute précision)
-- **Sensibilité** : -100dB minimum (ultra-sensible)
-- **Tolérance** : 15% d'écart fréquentiel accepté
-
-## 🛠️ Personnalisation
+## 🎼 Personnalisation des mélodies
 
 ### Ajouter une nouvelle mélodie
 
-Modifiez le tableau `AVE_MARIA_MELODY` dans `notes.js` :
+Éditez `melody.js` :
 
 ```javascript
-const NOUVELLE_MELODIE = [
-    { note: 'G3', duration: 1.5, startTime: 0 },
-    { note: 'C4', duration: 1.0, startTime: 1.5 },
+// Durées (double croche = 1)
+const NOTE_DURATIONS = {
+    DOUBLE_CROCHE: 1,
+    CROCHE: 2, 
+    NOIRE: 4,
+    NOIRE_POINTEE: 6,
+    BLANCHE: 8,
+    BLANCHE_POINTEE: 12,
+    RONDE: 16
+};
+
+const MA_MELODIE = [
+    { note: 'C3', duration: NOTE_DURATIONS.NOIRE, startTime: 0 },
+    { note: 'D3', duration: NOTE_DURATIONS.BLANCHE, startTime: 4 },
     // ... autres notes
 ];
 ```
 
-### Modifier l'apparence
+### Notation des durées
+- **startTime** : Position temporelle (en unités de double croche)
+- **duration** : Durée musicale (double croche = 1, noire = 4, etc.)
+- **note** : Nom anglo-saxon ('C3', 'D#4', etc.)
 
-Éditez `style.css` pour changer :
-- Couleurs (variables CSS dans :root)
-- Animations (keyframes)
-- Tailles et positions
+## ⚙️ Configuration technique
 
-### Ajuster la détection audio
+### Prérequis
+- Navigateur moderne (Chrome/Firefox recommandé)
+- Microphone fonctionnel  
+- HTTPS pour l'accès microphone (automatique sur GitHub Pages)
 
-Dans `script.js`, méthode `detectPitch()` :
-- `minDecibels` : Seuil de volume minimum
-- `smoothingTimeConstant` : Lissage de l'analyse
-- `fftSize` : Résolution de l'analyse
+### Paramètres modifiables
 
-## 🎯 Conseils pour jouer
+Dans `script.js`, section `GAME_CONFIG` :
 
-### 🎤 Pour l'accordage (v2.3)
-1. **Activez le micro d'abord** : Bouton dédié pour l'accordage
-2. **Volume normal** : Plus besoin de jouer très fort !
-3. **Affichage temps réel** : Do3 + fréquence exacte affichés
-4. **Accordage fin** : Utilisez la fréquence en Hz pour la précision
+```javascript
+const GAME_CONFIG = {
+    scrollSpeed: 80,         // Vitesse de défilement
+    hitLineX: 150,          // Position ligne de jeu
+    perfectThreshold: 25,    // Seuil "perfect" (cents)
+    okThreshold: 35,        // Seuil "ok" (cents)  
+    judgmentWindow: 800     // Fenêtre de timing (ms)
+};
+```
 
-### 🎮 Pour le jeu
-1. **Position** : Placez-vous à ~30cm du microphone
-2. **Environnement** : Réduisez les bruits de fond autant que possible
-3. **Archet** : Notes soutenues ET pizzicato fonctionnent maintenant
-4. **Patience** : Les notes mettent quelques secondes à arriver
-5. **Debug** : Les noms des notes s'affichent 30 secondes pour vous aider
+### Gamme de détection
+- **Plage** : 50-1200 Hz (violoncelle complet)
+- **Résolution** : FFT 16384 (haute précision)
+- **Algorithme** : YIN avec validation harmonique
+- **Spécialisation graves** : Optimisé pour cordes Do/Sol
 
-## 🐛 Résolution de problèmes
+## 🛠️ Résolution de problèmes
 
-### ❌ "Unexpected identifier 'info'" ou autres erreurs JavaScript
-- **SOLUTION** : Rechargez complètement avec **Ctrl+F5**
-- **CORRIGÉ en v2.3.2** : Problèmes de syntaxe JavaScript résolus
-- **Vérification** : Console ne doit plus afficher d'erreurs de syntaxe
-- **Alternative** : Si problème persiste, videz le cache complet du navigateur
+### ❌ Fichier melody.js non trouvé
+- **Vérifiez** que `melody.js` est dans le même dossier
+- **Rechargez** avec Ctrl+F5
+- **Console** : Message d'erreur de chargement
 
-### 🔄 Script affiche une ancienne version (v2.2, etc.)
-- **SOLUTION** : Faites un **Ctrl+F5** (rechargement forcé) 
-- **Cause** : Cache du navigateur avec ancienne version
-- **Vérification** : Dans la zone debug, vous devez voir "VERSION: v2.3.2"
-- **Alternative** : Videz le cache du navigateur
-- **Console** : Message vert "✅ ERREUR JAVASCRIPT CORRIGÉE"
+### 🎵 Notes pas détectées
+- **Volume** : Jouez assez fort (-60 dB minimum)
+- **Accord** : Vérifiez l'accordage de votre violoncelle
+- **Position** : 30cm du microphone recommandé
 
-### ❌ "Element missing: playedOctave"
-- **SOLUTION** : Rechargez complètement avec **Ctrl+F5**
-- **Cause** : HTML pas à jour (cherche encore l'ancien élément)
-- **v2.3+** : Utilise maintenant "playedFreq" au lieu de "playedOctave"
+### 🎼 Notes graves imprécises  
+- **Jouez soutenu** : Les graves ont besoin de plus de temps
+- **Archet ferme** : Son stable et continu
+- **Vérifiez** dans la console les infos de debug
 
-### 🎤 Le bouton microphone ne répond pas
-- ✅ **Nouveau en v2.3+** - Bouton microphone dédié
-- Vérifiez les permissions du navigateur  
-- Utilisez HTTPS (obligatoire sur certains navigateurs)
-- Le bouton devient rouge quand actif
+### 📱 Sur mobile/tablette
+- **Performance réduite** : L'algorithme YIN est exigeant
+- **Microphone** : Peut être moins sensible
+- **Alternative** : Utiliser sur ordinateur pour de meilleures performances
 
-### 🎵 Affichage "Do3" ne fonctionne pas
-- ✅ **Nouveau en v2.3+** - Format d'affichage amélioré
-- Doit afficher "Do3" + "130.8 Hz"
-- Si vous voyez encore "Do" / "3" séparés, rechargez la page
+## 🎓 Utilisation pédagogique
 
-### ❌ "TypeError: this.drawLedgerLines is not a function"
-- ✅ **CORRIGÉ en v2.2.1** - Ce bug critique est résolu
-- Si vous voyez encore cette erreur, vérifiez que vous avez bien v2.3.2
+### Pour professeurs de violoncelle
+- **Outil d'accordage** précis pour les élèves
+- **Travail du rythme** avec durées visuelles
+- **Motivation** : Aspect ludique du jeu
+- **Répertoire** : Ave Maria classique accessible
 
-### Le microphone ne fonctionne pas
-- Vérifiez les permissions du navigateur
-- Utilisez HTTPS (obligatoire sur certains navigateurs)
-- Testez dans un autre navigateur
-- Vérifiez que "Microphone: Activé - Sensibilité élevée" s'affiche
+### Pour élèves
+- **Feedback immédiat** sur l'intonation
+- **Visualisation** des durées musicales
+- **Progression** avec système de score
+- **Autonomie** : Peut s'exercer seul
 
-### Notes mal détectées ou volume trop faible
-- ✅ **v2.2+ corrige ce problème !** Ultra-sensible maintenant
-- Le status devrait afficher "Sensibilité élevée"
-- Volume normal suffisant (plus besoin de jouer très fort)
+## 📄 Licence et crédits
 
-### Pas de notes sur la portée
-- ✅ **v2.2+ corrige ce problème !** Notes toujours visibles
-- 1 note de test ajoutée automatiquement
-- Noms des notes affichés pendant 30 secondes
-
-### Performance lente
-- Fermez les autres onglets
-- Utilisez un navigateur récent (Chrome/Firefox recommandé)
-
----
-
-## 🔧 Guide de mise à jour
-
-### Comment s'assurer d'avoir la bonne version :
-
-1. **Rechargez avec Ctrl+F5** (rechargement forcé)
-2. **Vérifiez la version** dans le titre : doit afficher "v2.3.2"  
-3. **Zone debug** : doit afficher "VERSION: v2.3.2" en rouge
-4. **Console** (F12) : doit afficher en vert "🎻 CELLO RHYTHM GAME v2.3.2"
-5. **Boutons** : "🎤 Activer Microphone" (vert) + "Commencer le jeu" (bleu)
-6. **Pas d'erreur** : Plus de "Unexpected identifier 'info'" dans la console
-
-## 📄 Licence
-
-Ce projet est libre d'utilisation pour l'éducation musicale et le divertissement.
+- **Code** : Libre d'utilisation pour l'éducation musicale
+- **Ave Maria** : Charles Gounod (1818-1893) - Domaine public
+- **Algorithme YIN** : Implémentation libre basée sur les travaux de recherche
+- **Éducation** : Utilisation libre dans un contexte pédagogique
 
 ## 🤝 Contribution
 
-Les améliorations sont les bienvenues ! Areas d'amélioration :
-- Nouvelles mélodies classiques
-- Modes de difficulté
-- Meilleure détection de pitch
-- Support multi-instruments
-- Sauvegarde des scores
+Améliorations bienvenues :
+- **Nouvelles mélodies** classiques 
+- **Modes de difficulté** variables
+- **Support multi-instruments**
+- **Sauvegarde des scores**
+- **Mode duo/ensemble**
 
 ---
 
-**Bon jeu ! 🎼**
+**Bon jeu et bonne musique ! 🎼🎻**
