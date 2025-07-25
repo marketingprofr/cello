@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('🎻 CELLO RHYTHM GAME v2.3.7 - VERSION COMPLÈTE');
+    console.log('🎻 CELLO RHYTHM GAME v2.4.0 - DURÉES PROPORTIONNELLES');
     
     // ═══ DONNÉES INTÉGRÉES ═══
     const NOTE_FREQUENCIES = {
@@ -54,37 +54,13 @@
         'C#5': -15, 'D#5': -25, 'F#5': -45, 'G#5': -55, 'A#5': -65
     };
     
-    // Mélodie Ave Maria (version simplifiée mais complète)
-    const AVE_MARIA_MELODY = [
-        // Mesure 1-4 : Ave Maria...
-        { note: 'G3', duration: 4, startTime: 2 },
-        { note: 'C3', duration: 2, startTime: 6 },
-        { note: 'E3', duration: 2, startTime: 8 },
-        { note: 'G3', duration: 4, startTime: 10 },
-        
-        // Mesure 5-8 : gratia plena...
-        { note: 'A3', duration: 2, startTime: 14 },
-        { note: 'G3', duration: 2, startTime: 16 },
-        { note: 'F3', duration: 2, startTime: 18 },
-        { note: 'E3', duration: 4, startTime: 20 },
-        
-        // Mesure 9-12 : Dominus tecum...
-        { note: 'D3', duration: 2, startTime: 24 },
-        { note: 'E3', duration: 2, startTime: 26 },
-        { note: 'F3', duration: 2, startTime: 28 },
-        { note: 'G3', duration: 4, startTime: 30 },
-        
-        // Mesure 13-16 : benedicta tu...
-        { note: 'A3', duration: 2, startTime: 34 },
-        { note: 'B3', duration: 2, startTime: 36 },
-        { note: 'C4', duration: 4, startTime: 38 },
-        { note: 'G3', duration: 4, startTime: 42 },
-        
-        // Notes finales
-        { note: 'F3', duration: 2, startTime: 46 },
-        { note: 'E3', duration: 2, startTime: 48 },
-        { note: 'D3', duration: 2, startTime: 50 },
-        { note: 'C3', duration: 6, startTime: 52 }
+    // Mélodie simple pour test (sera remplacée par melody.js)
+    const FALLBACK_MELODY = [
+        { note: 'C3', duration: 8, startTime: 0 },   // Blanche 
+        { note: 'G3', duration: 4, startTime: 8 },   // Noire
+        { note: 'E3', duration: 4, startTime: 12 },  // Noire
+        { note: 'F3', duration: 4, startTime: 16 },  // Noire
+        { note: 'D3', duration: 8, startTime: 20 }   // Blanche
     ];
     
     function getNoteFrenchName(note) {
@@ -331,8 +307,16 @@
                 const freqEl = document.getElementById('frequency');
                 if (volEl) volEl.textContent = this.currentVolume;
                 
-                // Seuil pour détecter une note (ajusté pour le volume RMS)
-                if (volume > -60) {  // Seuil ajusté pour RMS
+                // Seuil adaptatif selon la fréquence mesurée
+                let volumeThreshold = -60; // Seuil de base
+                
+                // Pour les graves, être plus tolérant sur le volume
+                const preliminaryFreq = this.detectFundamentalFrequency(this.timeDomainArray);
+                if (preliminaryFreq > 0 && preliminaryFreq < 120) {
+                    volumeThreshold = -65; // Plus sensible pour les graves
+                }
+                
+                if (volume > volumeThreshold) {
                     // Utiliser l'autocorrélation pour trouver la fréquence fondamentale
                     const frequency = this.detectFundamentalFrequency(this.timeDomainArray);
                     
@@ -697,14 +681,24 @@
         }
         
         showDebugInfo() {
-            console.log('🔧 DEBUG INFO v2.3.8 - PRÉCISION ACCORDEUR:');
+            console.log('🔧 DEBUG INFO v2.4.0 - DURÉES PROPORTIONNELLES:');
             console.log(`Microphone: ${this.microphoneActive ? 'Actif' : 'Inactif'}`);
-            console.log(`Détection: ${this.pitchDetectionActive ? 'Active (Autocorrélation)' : 'Inactive'}`);
+            console.log(`Détection: ${this.pitchDetectionActive ? 'Active (YIN Graves+)' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
             console.log(`Score: ${this.score}, Combo: ${this.combo}`);
             console.log(`Note détectée: ${this.lastDetectedNote || 'Aucune'}`);
             console.log(`Note affichée: ${this.displayedNote || 'Aucune'}`);
             console.log(`Fréquence mesurée: ${this.displayedFreq.toFixed(2)} Hz`);
+            
+            // Stats de la mélodie
+            const totalNotes = this.gameNotes.length;
+            const playedNotes = this.gameNotes.filter(n => n.played).length;
+            const missedNotes = this.gameNotes.filter(n => n.missed).length;
+            
+            console.log(`🎼 MÉLODIE (Ave Maria):`)
+            console.log(`  Total: ${totalNotes} notes`);
+            console.log(`  Jouées: ${playedNotes}, Ratées: ${missedNotes}`);
+            console.log(`  Progression: ${Math.round(((playedNotes + missedNotes) / totalNotes) * 100)}%`);
             
             // Comparaison avec les fréquences théoriques
             if (this.displayedNote && NOTE_FREQUENCIES[this.displayedNote]) {
@@ -717,12 +711,19 @@
                 console.log(`  ${this.displayedNote} mesurée: ${actualFreq.toFixed(2)} Hz`);
                 console.log(`  Différence: ${centsDiff.toFixed(1)} cents`);
                 console.log(`  Statut: ${Math.abs(centsDiff) < 10 ? '✅ Accordé' : Math.abs(centsDiff) < 25 ? '⚠️ Proche' : '❌ Désaccordé'}`);
+                
+                // Debug spécial pour les graves
+                if (actualFreq < 120) {
+                    console.log(`🎻 ANALYSE GRAVES (< 120 Hz):`);
+                    console.log(`  Type: ${ actualFreq < 70 ? 'Très grave (Do-Ré)' : actualFreq < 90 ? 'Grave (Mi-Fa)' : 'Grave moyen (Sol-La)' }`);
+                    console.log(`  Optimisations actives: Seuils adaptatifs + Validation harmonique`);
+                }
             }
             
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
             
-            this.debugStatusElement.textContent = 'Debug accordeur affiché en console (F12)';
+            this.debugStatusElement.textContent = 'Debug v2.4.0 affiché en console (F12)';
         }
         
         setupCanvas() {
@@ -743,19 +744,42 @@
         initializeGameNotes() {
             console.log('🎼 Initializing Ave Maria melody...');
             
-            this.gameNotes = AVE_MARIA_MELODY.map((noteData, index) => {
-                const startX = this.canvas.width + 100 + (noteData.startTime * GAME_CONFIG.scrollSpeed);
+            // Essayer de charger AVE_MARIA_GOUNOD depuis melody.js, sinon utiliser fallback
+            let melodyToUse = FALLBACK_MELODY;
+            if (typeof AVE_MARIA_GOUNOD !== 'undefined') {
+                melodyToUse = AVE_MARIA_GOUNOD;
+                console.log('✅ Ave Maria complète chargée depuis melody.js');
+            } else {
+                console.log('⚠️ melody.js non trouvé, utilisation de la mélodie de test');
+            }
+            
+            this.gameNotes = melodyToUse.map((noteData, index) => {
+                // Configuration du timing et positionnement
+                const timeScale = GAME_CONFIG.scrollSpeed / 4; // Convertir les unités de durée en pixels
+                const startX = this.canvas.width + 100 + (noteData.startTime * timeScale);
+                const noteWidth = noteData.duration * (timeScale / 4); // Largeur proportionnelle à la durée
+                
                 return {
                     ...noteData,
                     x: startX,
                     y: STAFF_POSITIONS[noteData.note] || 90,
+                    width: Math.max(noteWidth, 20), // Largeur minimum de 20px
                     played: false,
                     missed: false,
                     id: index
                 };
             });
             
-            console.log(`✅ ${this.gameNotes.length} notes d'Ave Maria initialisées`);
+            console.log(`✅ ${this.gameNotes.length} notes d'Ave Maria initialisées avec durées visuelles`);
+            
+            // Afficher quelques exemples dans la console
+            if (this.gameNotes.length > 0) {
+                console.log('📋 Exemples de notes avec durées:');
+                for (let i = 0; i < Math.min(5, this.gameNotes.length); i++) {
+                    const note = this.gameNotes[i];
+                    console.log(`  ${note.note}: durée=${note.duration}, largeur=${note.width}px`);
+                }
+            }
         }
         
         updateUI() {
@@ -810,10 +834,12 @@
         
         checkMissedNotes() {
             for (const note of this.gameNotes) {
-                if (!note.played && !note.missed && note.x < GAME_CONFIG.hitLineX - 60) {
+                // Prendre en compte la largeur de la note pour le calcul de ratage
+                const noteEnd = note.x + (note.width || 0);
+                if (!note.played && !note.missed && noteEnd < GAME_CONFIG.hitLineX - 30) {
                     note.missed = true;
                     this.combo = 0;
-                    console.log(`❌ Note ratée: ${note.note}`);
+                    console.log(`❌ Note ratée: ${note.note} (durée: ${note.duration})`);
                 }
             }
         }
@@ -842,7 +868,8 @@
             let visibleCount = 0;
             
             for (const note of this.gameNotes) {
-                if (note.x < -50 || note.x > this.canvas.width + 50) continue;
+                // Vérifier si la note (avec sa largeur) est visible
+                if (note.x + note.width < -50 || note.x > this.canvas.width + 50) continue;
                 visibleCount++;
                 
                 let color = '#4CAF50';  // Vert pour les notes à venir
@@ -856,22 +883,49 @@
                     strokeColor = '#D32F2F';
                 }
                 
-                // Dessiner la note
+                // Dessiner la note avec largeur proportionnelle à la durée
                 this.ctx.fillStyle = color;
                 this.ctx.strokeStyle = strokeColor;
                 this.ctx.lineWidth = 2;
-                this.ctx.beginPath();
-                this.ctx.arc(note.x, note.y, GAME_CONFIG.noteRadius, 0, 2 * Math.PI);
-                this.ctx.fill();
-                this.ctx.stroke();
                 
-                // Afficher le nom de la note (première minute)
+                // Choisir la forme selon la durée
+                if (note.width <= 25) {
+                    // Notes courtes : cercle classique
+                    this.ctx.beginPath();
+                    this.ctx.arc(note.x, note.y, GAME_CONFIG.noteRadius, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                } else {
+                    // Notes longues : rectangle arrondi (représente la durée)
+                    const height = GAME_CONFIG.noteRadius * 1.5;
+                    const radius = Math.min(10, note.width / 4);
+                    
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(note.x - note.width/2, note.y - height/2, note.width, height, radius);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                    
+                    // Ajouter une petite tête de note pour la lisibilité
+                    this.ctx.beginPath();
+                    this.ctx.arc(note.x - note.width/2 + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 2, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                }
+                
+                // Afficher le nom de la note (pendant la première minute)
                 if (this.currentTime < 60) {
                     this.ctx.fillStyle = '#fff';
                     this.ctx.font = 'bold 11px Arial';
                     this.ctx.textAlign = 'center';
                     this.ctx.textBaseline = 'middle';
                     this.ctx.fillText(note.note, note.x, note.y - 20);
+                    
+                    // Afficher la durée pour debug (premières 10 secondes)
+                    if (this.currentTime < 10) {
+                        this.ctx.font = '9px Arial';
+                        this.ctx.fillStyle = '#ccc';
+                        this.ctx.fillText(`${note.duration}`, note.x, note.y + 20);
+                    }
                 }
                 
                 // Lignes supplémentaires si nécessaire
