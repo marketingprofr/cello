@@ -839,9 +839,10 @@
                 for (const measureElement of measureElements) {
                     const measureNumber = parseInt(measureElement.getAttribute('number'));
                     
-                    // ✅ CORRECTION: Temps absolu basé sur le numéro de mesure
+                    // ✅ CORRECTION: Temps absolu basé sur le numéro de mesure + correction décalage
                     // Chaque mesure fait 4 temps (4/4), soit 8 unités XML (divisions=2)
-                    const measureStartTime = (measureNumber - 1) * 8; // Mesure 1 = temps 0, mesure 2 = temps 8, etc.
+                    // CORRECTION: Décalage de 2 temps (4 unités XML) pour synchroniser
+                    const measureStartTime = (measureNumber - 1) * 8 - 4; // Correction de -2 temps
                     
                     // ✅ NOUVEAU: Ajouter la mesure avec temps absolu
                     measures.push({
