@@ -1,8 +1,8 @@
-// Version complète du jeu avec toutes les fonctionnalités
+// Version complète du jeu avec toutes les fonctionnalités - LIT SHEET1.XML
 (function() {
     'use strict';
     
-    console.log('🎻 CELLO RHYTHM GAME v2.4.0 - DURÉES PROPORTIONNELLES');
+    console.log('🎻 CELLO RHYTHM GAME v2.5.0 - LECTURE FICHIER XML');
     
     // ═══ DONNÉES INTÉGRÉES ═══
     const NOTE_FREQUENCIES = {
@@ -54,7 +54,7 @@
         'C#5': -15, 'D#5': -25, 'F#5': -45, 'G#5': -55, 'A#5': -65
     };
     
-    // Mélodie simple pour test (sera remplacée par melody.js)
+    // Mélodie simple pour test (fallback si XML échoue)
     const FALLBACK_MELODY = [
         { note: 'C3', duration: 8, startTime: 0 },   // Blanche 
         { note: 'G3', duration: 4, startTime: 8 },   // Noire
@@ -97,7 +97,7 @@
     
     class CelloRhythmGame {
         constructor() {
-            console.log('🎻 Creating COMPLETE game v2.3.7...');
+            console.log('🎻 Creating COMPLETE game v2.5.0 (XML Reader)...');
             
             // Variables de base
             this.microphoneActive = false;
@@ -129,12 +129,12 @@
             this.initializeElements();
             this.initializeEventListeners();
             this.setupCanvas();
-            this.initializeGameNotes();
+            this.initializeGameNotes(); // Cette fonction chargera sheet1.xml
             
             // Démarrer l'animation
             this.animate();
             
-            console.log('✅ COMPLETE game created v2.3.7');
+            console.log('✅ COMPLETE game created v2.5.0 (XML Reader)');
         }
         
         initializeElements() {
@@ -650,7 +650,7 @@
                 this.startTime = Date.now();
                 this.score = 0;
                 this.combo = 0;
-                this.initializeGameNotes();
+                await this.initializeGameNotes(); // Await pour le XML parsing
                 
                 this.startBtn.disabled = true;
                 this.stopBtn.disabled = false;
@@ -681,7 +681,7 @@
         }
         
         showDebugInfo() {
-            console.log('🔧 DEBUG INFO v2.4.0 - DURÉES PROPORTIONNELLES:');
+            console.log('🔧 DEBUG INFO v2.5.0 - LECTURE XML:');
             console.log(`Microphone: ${this.microphoneActive ? 'Actif' : 'Inactif'}`);
             console.log(`Détection: ${this.pitchDetectionActive ? 'Active (YIN Graves+)' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
@@ -695,7 +695,7 @@
             const playedNotes = this.gameNotes.filter(n => n.played).length;
             const missedNotes = this.gameNotes.filter(n => n.missed).length;
             
-            console.log(`🎼 MÉLODIE (Ave Maria):`)
+            console.log(`🎼 MÉLODIE (depuis sheet1.xml):`)
             console.log(`  Total: ${totalNotes} notes`);
             console.log(`  Jouées: ${playedNotes}, Ratées: ${missedNotes}`);
             console.log(`  Progression: ${Math.round(((playedNotes + missedNotes) / totalNotes) * 100)}%`);
@@ -723,7 +723,7 @@
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
             
-            this.debugStatusElement.textContent = 'Debug v2.4.0 affiché en console (F12)';
+            this.debugStatusElement.textContent = 'Debug v2.5.0 affiché en console (F12)';
         }
         
         setupCanvas() {
@@ -741,16 +741,122 @@
             console.log(`✅ Canvas setup: ${width}x${height}`);
         }
         
-        initializeGameNotes() {
-            console.log('🎼 Initializing Ave Maria melody...');
+        async loadXMLFile() {
+            console.log('📁 Attempting to load sheet1.xml...');
             
-            // Essayer de charger AVE_MARIA_GOUNOD depuis melody.js, sinon utiliser fallback
+            try {
+                const response = await fetch('./sheet1.xml');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const xmlText = await response.text();
+                console.log('✅ sheet1.xml loaded successfully');
+                return xmlText;
+                
+            } catch (error) {
+                console.error('❌ Failed to load sheet1.xml:', error);
+                throw error;
+            }
+        }
+        
+        async parseXMLMelody() {
+            console.log('🎼 Parsing MusicXML data from sheet1.xml...');
+            
+            try {
+                // Charger le fichier XML
+                const xmlContent = await this.loadXMLFile();
+                
+                // Parser le XML
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+                
+                // Vérifier les erreurs de parsing
+                const parseError = xmlDoc.querySelector('parsererror');
+                if (parseError) {
+                    throw new Error('Erreur lors du parsing XML: ' + parseError.textContent);
+                }
+                
+                // Extraire les paramètres
+                const divisionsElement = xmlDoc.querySelector('divisions');
+                const divisions = divisionsElement ? parseInt(divisionsElement.textContent) : 2;
+                console.log(`📏 Divisions trouvées: ${divisions} (1 noire = ${divisions} unités)`);
+                
+                // Extraire toutes les notes
+                const noteElements = xmlDoc.querySelectorAll('note');
+                console.log(`🎵 ${noteElements.length} éléments <note> trouvés dans le XML`);
+                
+                const melody = [];
+                let currentTime = 0;
+                
+                for (const noteElement of noteElements) {
+                    const restElement = noteElement.querySelector('rest');
+                    const durationElement = noteElement.querySelector('duration');
+                    
+                    if (!durationElement) continue;
+                    
+                    const duration = parseInt(durationElement.textContent);
+                    
+                    if (restElement) {
+                        // C'est un silence, avancer le temps sans ajouter de note
+                        currentTime += duration;
+                        continue;
+                    }
+                    
+                    const pitchElement = noteElement.querySelector('pitch');
+                    if (!pitchElement) continue;
+                    
+                    const stepElement = pitchElement.querySelector('step');
+                    const octaveElement = pitchElement.querySelector('octave');
+                    const alterElement = pitchElement.querySelector('alter');
+                    
+                    if (!stepElement || !octaveElement) continue;
+                    
+                    const step = stepElement.textContent;
+                    const octave = parseInt(octaveElement.textContent);
+                    const alter = alterElement ? parseInt(alterElement.textContent) : 0;
+                    
+                    // Construire le nom de la note
+                    let noteName = step;
+                    if (alter === 1) noteName += '#';
+                    else if (alter === -1) noteName += 'b';
+                    noteName += octave;
+                    
+                    // Convertir les durées MusicXML en unités du jeu
+                    // Dans MusicXML avec divisions=2: 8=ronde, 4=blanche, 2=noire, 1=croche
+                    // Dans le jeu: 16=ronde, 8=blanche, 4=noire, 2=croche
+                    const gameDuration = (duration / divisions) * 4;
+                    
+                    melody.push({
+                        note: noteName,
+                        duration: gameDuration,
+                        startTime: (currentTime / divisions) * 4
+                    });
+                    
+                    currentTime += duration;
+                }
+                
+                console.log(`✅ ${melody.length} notes extraites du MusicXML`);
+                return melody;
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du parsing XML:', error);
+                throw error;
+            }
+        }
+        
+        async initializeGameNotes() {
+            console.log('🎼 Initializing melody from sheet1.xml...');
+            
             let melodyToUse = FALLBACK_MELODY;
-            if (typeof AVE_MARIA_GOUNOD !== 'undefined') {
-                melodyToUse = AVE_MARIA_GOUNOD;
-                console.log('✅ Ave Maria complète chargée depuis melody.js');
-            } else {
-                console.log('⚠️ melody.js non trouvé, utilisation de la mélodie de test');
+            
+            try {
+                // Essayer de parser le XML
+                melodyToUse = await this.parseXMLMelody();
+                console.log('✅ Ave Maria complète chargée depuis sheet1.xml');
+            } catch (error) {
+                console.error('⚠️ Erreur lors du chargement du XML:', error);
+                console.log('⚠️ Utilisation de la mélodie de test à la place');
             }
             
             this.gameNotes = melodyToUse.map((noteData, index) => {
@@ -774,10 +880,10 @@
             
             // Afficher quelques exemples dans la console
             if (this.gameNotes.length > 0) {
-                console.log('📋 Exemples de notes avec durées:');
+                console.log('📋 Exemples de notes avec durées (depuis sheet1.xml):');
                 for (let i = 0; i < Math.min(5, this.gameNotes.length); i++) {
                     const note = this.gameNotes[i];
-                    console.log(`  ${note.note}: durée=${note.duration}, largeur=${note.width}px`);
+                    console.log(`  ${note.note}: durée=${note.duration}, largeur=${note.width}px, startTime=${note.startTime}`);
                 }
             }
         }
