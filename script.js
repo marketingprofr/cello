@@ -1054,11 +1054,14 @@
         }
         
         updateGameNotes() {
-            // ✅ VITESSE FIXE: À 60 BPM, les notes défilent à scrollSpeed pixels/seconde
-            const pixelsPerFrame = GAME_CONFIG.scrollSpeed / 60; // 60 FPS
+            // ✅ SYNCHRONISATION: Même méthode que les mesures - basée sur currentTime
+            const currentGameTime = this.currentTime;
             
             for (const note of this.gameNotes) {
-                note.x -= pixelsPerFrame;
+                // Calculer la position X basée sur le temps de jeu actuel
+                // Position initiale - déplacement basé sur le temps
+                const initialX = this.canvas.width + 200 + (note.startTimeInSeconds * GAME_CONFIG.scrollSpeed);
+                note.x = initialX - (currentGameTime * GAME_CONFIG.scrollSpeed);
             }
         }
         
