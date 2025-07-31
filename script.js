@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('🎻 CELLO RHYTHM GAME v2.5.3 - TEMPO 60 BPM SYNCHRONISÉ (FIX DÉCALAGE)');
+    console.log('🎻 CELLO RHYTHM GAME v2.5.4 - TEMPO 60 BPM SYNCHRONISÉ (FIX DÉCALAGE)');
     
     // ═══ DONNÉES INTÉGRÉES ═══
     const NOTE_FREQUENCIES = {
