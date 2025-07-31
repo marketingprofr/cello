@@ -32,30 +32,30 @@
         staffLineY: [50, 70, 90, 110, 130]
     };
     
-    // Positions des notes sur la portée (clé de fa) - COMPLÈTES + ÉTENDUES
+    // Positions des notes sur la portée (clé de fa) - CORRIGÉES ✅
     const STAFF_POSITIONS = {
         // Notes très graves (en dessous de la portée)
-        'C1': 210, 'D1': 200, 'E1': 190, 'F1': 180, 'G1': 170, 'A1': 160, 'B1': 150,
+        'C1': 210, 'C#1': 205, 'D1': 200, 'D#1': 195, 'E1': 190, 'F1': 180, 'F#1': 175, 
+        'G1': 170, 'G#1': 165, 'A1': 160, 'A#1': 155, 'B1': 150,
         
-        // Notes graves (portée basse)
-        'C2': 170, 'D2': 160, 'E2': 150, 'F2': 140, 'G2': 130,
-        'A2': 120, 'B2': 110, 
+        // Notes graves (sous la portée)
+        'C2': 140, 'C#2': 135, 'D2': 130, 'D#2': 125, 'E2': 120, 'F2': 115, 'F#2': 110, 
+        'G2': 130, 'G#2': 125, 'A2': 120, 'A#2': 115, 'B2': 110, // G2 sur ligne 5
         
-        // Notes moyennes (sur la portée)
-        'C3': 130, 'D3': 120, 'E3': 110, 'F3': 100, 'G3': 90, 'A3': 80, 'B3': 70,
+        // Notes moyennes (sur la portée) - CLEF DE FA CORRECTE
+        'C3': 100, 'C#3': 95,   // Do3 = espace entre lignes 3-4
+        'D3': 90, 'D#3': 85,    // Ré3 = ligne 3
+        'E3': 80, 'F3': 70,     // Mi3 = espace, Fa3 = ligne 2  
+        'F#3': 65, 'G3': 60,    // Sol3 = espace entre lignes 1-2
+        'G#3': 55, 'A3': 50,    // La3 = ligne 1
+        'A#3': 45, 'B3': 40,    // Si3 = au-dessus de la portée
         
         // Notes aiguës (au-dessus de la portée)
-        'C4': 60, 'D4': 50, 'E4': 40, 'F4': 30, 'G4': 20, 'A4': 10, 'B4': 0,
-        'C5': -10, 'D5': -20, 'E5': -30, 'F5': -40, 'G5': -50, 'A5': -60, 'B5': -70,
-        'C6': -80, 'D6': -90, 'E6': -100, 'F6': -110, 'G6': -120,
-        
-        // Notes avec dièses/bémols
-        'C#1': 205, 'D#1': 195, 'F#1': 175, 'G#1': 165, 'A#1': 155,
-        'C#2': 165, 'D#2': 155, 'F#2': 135, 'G#2': 125, 'A#2': 115,
-        'C#3': 125, 'D#3': 115, 'F#3': 95, 'G#3': 85, 'A#3': 75,
-        'C#4': 55, 'D#4': 45, 'F#4': 25, 'G#4': 15, 'A#4': 5,
-        'C#5': -15, 'D#5': -25, 'F#5': -45, 'G#5': -55, 'A#5': -65,
-        'C#6': -85, 'D#6': -95, 'F#6': -115, 'G#6': -125, 'A#6': -135
+        'C4': 30, 'C#4': 25, 'D4': 20, 'D#4': 15, 'E4': 10, 'F4': 5, 'F#4': 0,
+        'G4': -5, 'G#4': -10, 'A4': -15, 'A#4': -20, 'B4': -25,
+        'C5': -30, 'C#5': -35, 'D5': -40, 'D#5': -45, 'E5': -50, 'F5': -55, 'F#5': -60,
+        'G5': -65, 'G#5': -70, 'A5': -75, 'A#5': -80, 'B5': -85,
+        'C6': -90, 'C#6': -95, 'D6': -100, 'D#6': -105, 'E6': -110, 'F6': -115
     };
     
     // Mélodie simple pour test (fallback si XML échoue)
