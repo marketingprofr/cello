@@ -682,7 +682,7 @@
         }
         
         showDebugInfo() {
-            console.log('🔧 DEBUG INFO v2.5.0 - LECTURE XML:');
+            console.log('🔧 DEBUG INFO v2.5.1 - LECTURE XML + MESURES:');
             console.log(`Microphone: ${this.microphoneActive ? 'Actif' : 'Inactif'}`);
             console.log(`Détection: ${this.pitchDetectionActive ? 'Active (YIN Graves+)' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
@@ -695,11 +695,34 @@
             const totalNotes = this.gameNotes.length;
             const playedNotes = this.gameNotes.filter(n => n.played).length;
             const missedNotes = this.gameNotes.filter(n => n.missed).length;
+            const visibleNotes = this.gameNotes.filter(n => n.x > -50 && n.x < this.canvas.width + 50).length;
             
             console.log(`🎼 MÉLODIE (depuis sheet1.xml):`)
             console.log(`  Total: ${totalNotes} notes`);
+            console.log(`  Visibles: ${visibleNotes} notes`);
             console.log(`  Jouées: ${playedNotes}, Ratées: ${missedNotes}`);
             console.log(`  Progression: ${Math.round(((playedNotes + missedNotes) / totalNotes) * 100)}%`);
+            
+            // Debug des premières notes visibles
+            const visibleNotesArray = this.gameNotes.filter(n => n.x > -50 && n.x < this.canvas.width + 50);
+            if (visibleNotesArray.length > 0) {
+                console.log(`🎵 NOTES VISIBLES (premières 5):`);
+                for (let i = 0; i < Math.min(5, visibleNotesArray.length); i++) {
+                    const note = visibleNotesArray[i];
+                    console.log(`  ${note.note} - x:${Math.round(note.x)}, y:${note.y}, durée:${note.duration}`);
+                }
+            } else {
+                console.log(`❌ AUCUNE NOTE VISIBLE !`);
+                if (totalNotes > 0) {
+                    console.log(`🔍 DEBUG - Premières notes du jeu:`);
+                    for (let i = 0; i < Math.min(5, totalNotes); i++) {
+                        const note = this.gameNotes[i];
+                        console.log(`  ${note.note} - x:${Math.round(note.x)}, startTime:${note.startTime}, currentTime:${this.currentTime}`);
+                    }
+                }
+            }
+            
+            console.log(`📊 MESURES: ${this.measures.length} mesures chargées`);
             
             // Comparaison avec les fréquences théoriques
             if (this.displayedNote && NOTE_FREQUENCIES[this.displayedNote]) {
@@ -724,7 +747,7 @@
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
             
-            this.debugStatusElement.textContent = 'Debug v2.5.0 affiché en console (F12)';
+            this.debugStatusElement.textContent = 'Debug v2.5.1 affiché en console (F12)';
         }
         
         setupCanvas() {
