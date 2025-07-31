@@ -1,8 +1,8 @@
-// Version complète du jeu avec toutes les fonctionnalités - LIT SHEET1.XML
+// Version complète du jeu avec toutes les fonctionnalités - TEMPO 60 BPM SYNCHRONISÉ
 (function() {
     'use strict';
     
-    console.log('🎻 CELLO RHYTHM GAME v2.5.0 - LECTURE FICHIER XML');
+    console.log('🎻 CELLO RHYTHM GAME v2.5.2 - TEMPO 60 BPM SYNCHRONISÉ');
     
     // ═══ DONNÉES INTÉGRÉES ═══
     const NOTE_FREQUENCIES = {
@@ -23,13 +23,14 @@
     };
     
     const GAME_CONFIG = {
-        scrollSpeed: 80,
+        scrollSpeed: 60, // pixels par seconde à 60 BPM
         hitLineX: 150,
         perfectThreshold: 35,
         okThreshold: 70,
         judgmentWindow: 800,
         noteRadius: 14,
-        staffLineY: [50, 70, 90, 110, 130]
+        staffLineY: [50, 70, 90, 110, 130],
+        tempo: 60 // BPM - 1 noire = 1 seconde
     };
     
     // Positions des notes sur la portée (clé de fa) - CORRIGÉES ✅
@@ -101,7 +102,7 @@
     
     class CelloRhythmGame {
         constructor() {
-            console.log('🎻 Creating COMPLETE game v2.5.0 (XML Reader)...');
+            console.log('🎻 Creating COMPLETE game v2.5.2 (Tempo 60 BPM synchronisé)...');
             
             // Variables de base
             this.microphoneActive = false;
@@ -139,7 +140,7 @@
             // Démarrer l'animation
             this.animate();
             
-            console.log('✅ COMPLETE game created v2.5.0 (XML Reader)');
+            console.log('✅ COMPLETE game created v2.5.2 (Tempo 60 BPM synchronisé)');
         }
         
         initializeElements() {
@@ -686,7 +687,7 @@
         }
         
         showDebugInfo() {
-            console.log('🔧 DEBUG INFO v2.5.1 - LECTURE XML + MESURES:');
+            console.log('🔧 DEBUG INFO v2.5.2 - TEMPO 60 BPM SYNCHRONISÉ:');
             console.log(`Microphone: ${this.microphoneActive ? 'Actif' : 'Inactif'}`);
             console.log(`Détection: ${this.pitchDetectionActive ? 'Active (YIN Graves+)' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
@@ -701,19 +702,21 @@
             const missedNotes = this.gameNotes.filter(n => n.missed).length;
             const visibleNotes = this.gameNotes.filter(n => n.x > -50 && n.x < this.canvas.width + 50).length;
             
-            console.log(`🎼 MÉLODIE (depuis sheet1.xml):`)
+            console.log(`🎼 MÉLODIE (Ave Maria à 60 BPM):`);
             console.log(`  Total: ${totalNotes} notes`);
             console.log(`  Visibles: ${visibleNotes} notes`);
             console.log(`  Jouées: ${playedNotes}, Ratées: ${missedNotes}`);
             console.log(`  Progression: ${Math.round(((playedNotes + missedNotes) / totalNotes) * 100)}%`);
+            console.log(`  Tempo: ${GAME_CONFIG.tempo} BPM, Vitesse: ${GAME_CONFIG.scrollSpeed} px/s`);
             
-            // Debug des premières notes visibles
+            // Debug des premières notes visibles avec durées
             const visibleNotesArray = this.gameNotes.filter(n => n.x > -50 && n.x < this.canvas.width + 50);
             if (visibleNotesArray.length > 0) {
-                console.log(`🎵 NOTES VISIBLES (premières 5):`);
+                console.log(`🎵 NOTES VISIBLES (avec durées):`);
                 for (let i = 0; i < Math.min(5, visibleNotesArray.length); i++) {
                     const note = visibleNotesArray[i];
-                    console.log(`  ${note.note} - x:${Math.round(note.x)}, y:${note.y}, durée:${note.duration}`);
+                    const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
+                    console.log(`  ${note.note} (${noteType}) - x:${Math.round(note.x)}, largeur:${Math.round(note.width)}px, durée:${note.durationInSeconds}s`);
                 }
             } else {
                 console.log(`❌ AUCUNE NOTE VISIBLE !`);
@@ -721,12 +724,13 @@
                     console.log(`🔍 DEBUG - Premières notes du jeu:`);
                     for (let i = 0; i < Math.min(5, totalNotes); i++) {
                         const note = this.gameNotes[i];
-                        console.log(`  ${note.note} - x:${Math.round(note.x)}, startTime:${note.startTime}, currentTime:${this.currentTime}`);
+                        const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
+                        console.log(`  ${note.note} (${noteType}) - x:${Math.round(note.x)}, startTime:${note.startTime}, currentTime:${this.currentTime}`);
                     }
                 }
             }
             
-            console.log(`📊 MESURES: ${this.measures.length} mesures chargées`);
+            console.log(`📊 MESURES: ${this.measures.length} mesures chargées et synchronisées`);
             
             // Comparaison avec les fréquences théoriques
             if (this.displayedNote && NOTE_FREQUENCIES[this.displayedNote]) {
@@ -751,7 +755,7 @@
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
             
-            this.debugStatusElement.textContent = 'Debug v2.5.1 affiché en console (F12)';
+            this.debugStatusElement.textContent = 'Debug v2.5.2 (TEMPO 60 BPM) affiché en console (F12)';
         }
         
         setupCanvas() {
@@ -839,7 +843,7 @@
                     // ✅ NOUVEAU: Ajouter la mesure
                     measures.push({
                         number: parseInt(measureNumber),
-                        startTime: (measureStartTime / divisions) * 4, // Convertir en unités du jeu
+                        startTime: measureStartTime, // En unités XML
                         xmlTime: measureStartTime
                     });
                     
@@ -876,13 +880,10 @@
                         // ✅ NOUVEAU: Appliquer la transposition
                         let transposedNote = this.transposeNote(step, octave, alter, chromaticTranspose);
                         
-                        // Convertir les durées MusicXML en unités du jeu
-                        const gameDuration = (duration / divisions) * 4;
-                        
                         melody.push({
                             note: transposedNote,
-                            duration: gameDuration,
-                            startTime: (currentTime / divisions) * 4,
+                            duration: duration,
+                            startTime: currentTime, // En unités XML
                             measureNumber: parseInt(measureNumber) // ✅ NOUVEAU: Numéro de mesure
                         });
                         
@@ -966,32 +967,43 @@
             }
             
             this.gameNotes = melodyToUse.map((noteData, index) => {
-                // Configuration du timing et positionnement
-                const timeScale = GAME_CONFIG.scrollSpeed / 4; // Convertir les unités de durée en pixels
-                const startX = this.canvas.width + 100 + (noteData.startTime * timeScale);
-                const noteWidth = noteData.duration * (timeScale / 4); // Largeur proportionnelle à la durée
+                // ✅ CORRECTION TEMPO: À 60 BPM, 1 noire = 1 seconde
+                // Les durées du XML sont en divisions (2 = noire), donc duration/2 = durée en noires
+                const durationInBeats = noteData.duration / 2; // Convertir divisions XML en noires
+                const durationInSeconds = durationInBeats * (60 / GAME_CONFIG.tempo); // À 60 BPM
+                const startTimeInBeats = noteData.startTime / 2; // Convertir startTime XML en noires
+                const startTimeInSeconds = startTimeInBeats * (60 / GAME_CONFIG.tempo); // À 60 BPM
+                
+                // Position de départ : assez loin pour laisser le temps de voir venir
+                const startX = this.canvas.width + 200 + (startTimeInSeconds * GAME_CONFIG.scrollSpeed);
+                
+                // ✅ LARGEUR CORRECTE: Proportionnelle à la durée en secondes
+                const noteWidth = durationInSeconds * GAME_CONFIG.scrollSpeed;
                 
                 return {
                     ...noteData,
                     x: startX,
                     y: STAFF_POSITIONS[noteData.note] || 90,
-                    width: Math.max(noteWidth, 20), // Largeur minimum de 20px
+                    width: Math.max(noteWidth, 15), // Largeur minimum de 15px
+                    durationInSeconds: durationInSeconds, // Stocker pour debug
+                    startTimeInSeconds: startTimeInSeconds, // Temps de départ en secondes
                     played: false,
                     missed: false,
                     id: index
                 };
             });
             
-            console.log(`✅ ${this.gameNotes.length} notes d'Ave Maria initialisées avec durées visuelles`);
+            console.log(`✅ ${this.gameNotes.length} notes d'Ave Maria initialisées avec durées correctes (60 BPM)`);
             console.log(`✅ ${this.measures.length} mesures initialisées`);
             
             // Afficher quelques exemples dans la console
             if (this.gameNotes.length > 0) {
-                console.log('📋 Exemples de notes avec durées (depuis sheet1.xml):');
+                console.log('📋 Exemples de notes avec durées correctes (60 BPM):');
                 for (let i = 0; i < Math.min(5, this.gameNotes.length); i++) {
                     const note = this.gameNotes[i];
                     const measureInfo = note.measureNumber ? ` (mesure ${note.measureNumber})` : '';
-                    console.log(`  ${note.note}: durée=${note.duration}, largeur=${note.width}px, startTime=${note.startTime}${measureInfo}`);
+                    const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
+                    console.log(`  ${note.note}: ${noteType} (${note.durationInSeconds}s), largeur=${Math.round(note.width)}px${measureInfo}`);
                 }
             }
         }
@@ -1042,19 +1054,23 @@
         }
         
         updateGameNotes() {
+            // ✅ VITESSE FIXE: À 60 BPM, les notes défilent à scrollSpeed pixels/seconde
+            const pixelsPerFrame = GAME_CONFIG.scrollSpeed / 60; // 60 FPS
+            
             for (const note of this.gameNotes) {
-                note.x -= (GAME_CONFIG.scrollSpeed / 60) * (60/60); // 60 FPS
+                note.x -= pixelsPerFrame;
             }
         }
         
         checkMissedNotes() {
             for (const note of this.gameNotes) {
-                // Prendre en compte la largeur de la note pour le calcul de ratage
-                const noteEnd = note.x + (note.width || 0);
-                if (!note.played && !note.missed && noteEnd < GAME_CONFIG.hitLineX - 30) {
+                // ✅ CORRECTION: Une note est ratée quand sa fin (x + width) dépasse la ligne de jeu
+                const noteEnd = note.x + note.width;
+                if (!note.played && !note.missed && noteEnd < GAME_CONFIG.hitLineX - 10) {
                     note.missed = true;
                     this.combo = 0;
-                    console.log(`❌ Note ratée: ${note.note} (durée: ${note.duration})`);
+                    const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
+                    console.log(`❌ Note ratée: ${note.note} (${noteType}, ${note.durationInSeconds}s)`);
                 }
             }
         }
@@ -1082,8 +1098,7 @@
         drawMeasureBars() {
             if (!this.measures || this.measures.length === 0) return;
             
-            // Configuration pour les barres de mesure
-            const timeScale = GAME_CONFIG.scrollSpeed / 4;
+            // ✅ SYNCHRONISATION: Même vitesse que les notes
             const currentGameTime = this.isPlaying ? this.currentTime : 0;
             
             this.ctx.strokeStyle = '#888888'; // Gris pour les barres de mesure
@@ -1097,8 +1112,13 @@
             this.ctx.textBaseline = 'bottom';
             
             for (const measure of this.measures) {
-                // Calculer la position X de la barre de mesure
-                const measureX = this.canvas.width + 100 + (measure.startTime * timeScale) - (currentGameTime * timeScale * 4);
+                // ✅ CALCUL CORRIGÉ: Conversion XML time -> temps de jeu -> position X
+                // startTime du XML est en unités de divisions (2 = noire)
+                const timeInBeats = measure.startTime / 2; // Convertir en noires
+                const timeInSeconds = timeInBeats * (60 / GAME_CONFIG.tempo); // À 60 BPM
+                
+                // Position X de la mesure = position initiale - déplacement
+                const measureX = (this.canvas.width + 200) + (timeInSeconds * GAME_CONFIG.scrollSpeed) - (currentGameTime * GAME_CONFIG.scrollSpeed);
                 
                 // Ne dessiner que les barres visibles
                 if (measureX < -50 || measureX > this.canvas.width + 50) continue;
@@ -1143,28 +1163,38 @@
                 this.ctx.strokeStyle = strokeColor;
                 this.ctx.lineWidth = 2;
                 
-                // Choisir la forme selon la durée
-                if (note.width <= 25) {
+                // ✅ FORMES SELON LA DURÉE ET LARGEUR
+                if (note.width <= 30) {
                     // Notes courtes : cercle classique
                     this.ctx.beginPath();
                     this.ctx.arc(note.x, note.y, GAME_CONFIG.noteRadius, 0, 2 * Math.PI);
                     this.ctx.fill();
                     this.ctx.stroke();
                 } else {
-                    // Notes longues : rectangle arrondi (représente la durée)
-                    const height = GAME_CONFIG.noteRadius * 1.5;
-                    const radius = Math.min(10, note.width / 4);
+                    // Notes longues : rectangle arrondi représentant la durée
+                    const height = GAME_CONFIG.noteRadius * 1.8;
+                    const radius = Math.min(8, note.width / 6);
                     
+                    // Rectangle principal représentant la durée
                     this.ctx.beginPath();
                     this.ctx.roundRect(note.x - note.width/2, note.y - height/2, note.width, height, radius);
                     this.ctx.fill();
                     this.ctx.stroke();
                     
-                    // Ajouter une petite tête de note pour la lisibilité
+                    // Tête de note au début pour la lisibilité
+                    this.ctx.fillStyle = strokeColor; // Couleur plus foncée pour la tête
                     this.ctx.beginPath();
-                    this.ctx.arc(note.x - note.width/2 + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 2, 0, 2 * Math.PI);
+                    this.ctx.arc(note.x - note.width/2 + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 1, 0, 2 * Math.PI);
                     this.ctx.fill();
-                    this.ctx.stroke();
+                    
+                    // Pour les rondes (duration=8), dessiner différemment
+                    if (note.duration === 8) {
+                        // Contour de ronde (note creuse)
+                        this.ctx.fillStyle = '#000000'; // Fond noir pour faire le trou
+                        this.ctx.beginPath();
+                        this.ctx.arc(note.x - note.width/2 + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 4, 0, 2 * Math.PI);
+                        this.ctx.fill();
+                    }
                 }
                 
                 // Afficher le nom de la note (pendant la première minute)
@@ -1173,13 +1203,15 @@
                     this.ctx.font = 'bold 11px Arial';
                     this.ctx.textAlign = 'center';
                     this.ctx.textBaseline = 'middle';
-                    this.ctx.fillText(note.note, note.x, note.y - 20);
+                    const frenchName = getNoteFrenchName(note.note);
+                    this.ctx.fillText(frenchName, note.x, note.y - 25);
                     
                     // Afficher la durée pour debug (premières 10 secondes)
                     if (this.currentTime < 10) {
                         this.ctx.font = '9px Arial';
                         this.ctx.fillStyle = '#ccc';
-                        this.ctx.fillText(`${note.duration}`, note.x, note.y + 20);
+                        const durationText = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : note.duration.toString();
+                        this.ctx.fillText(durationText, note.x, note.y + 25);
                     }
                 }
                 
@@ -1197,14 +1229,14 @@
                 this.ctx.fillStyle = '#FF5722';
                 this.ctx.font = 'bold 16px Arial';
                 this.ctx.textAlign = 'center';
-                this.ctx.fillText('Les notes arrivent...', this.canvas.width / 2, 30);
+                this.ctx.fillText('Les notes arrivent... (Tempo 60 BPM)', this.canvas.width / 2, 30);
                 
                 // Debug: afficher la position de la première note
                 if (this.gameNotes.length > 0) {
                     const firstNote = this.gameNotes[0];
                     this.ctx.fillStyle = '#FFA500';
                     this.ctx.font = '12px Arial';
-                    this.ctx.fillText(`Première note: ${firstNote.note} à x=${Math.round(firstNote.x)}`, this.canvas.width / 2, 50);
+                    this.ctx.fillText(`Première note: ${firstNote.note} à x=${Math.round(firstNote.x)} (largeur=${Math.round(firstNote.width)})`, this.canvas.width / 2, 50);
                 }
             }
         }
