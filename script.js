@@ -782,6 +782,17 @@
                 const divisions = divisionsElement ? parseInt(divisionsElement.textContent) : 2;
                 console.log(`📏 Divisions trouvées: ${divisions} (1 noire = ${divisions} unités)`);
                 
+                // ✅ NOUVEAU: Extraire la transposition
+                const transposeElement = xmlDoc.querySelector('transpose');
+                let chromaticTranspose = 0;
+                if (transposeElement) {
+                    const chromaticElement = transposeElement.querySelector('chromatic');
+                    if (chromaticElement) {
+                        chromaticTranspose = parseInt(chromaticElement.textContent);
+                        console.log(`🎵 Transposition trouvée: ${chromaticTranspose} demi-tons`);
+                    }
+                }
+                
                 // Extraire toutes les notes
                 const noteElements = xmlDoc.querySelectorAll('note');
                 console.log(`🎵 ${noteElements.length} éléments <note> trouvés dans le XML`);
@@ -813,22 +824,17 @@
                     if (!stepElement || !octaveElement) continue;
                     
                     const step = stepElement.textContent;
-                    const octave = parseInt(octaveElement.textContent);
+                    let octave = parseInt(octaveElement.textContent);
                     const alter = alterElement ? parseInt(alterElement.textContent) : 0;
                     
-                    // Construire le nom de la note
-                    let noteName = step;
-                    if (alter === 1) noteName += '#';
-                    else if (alter === -1) noteName += 'b';
-                    noteName += octave;
+                    // ✅ NOUVEAU: Appliquer la transposition
+                    let transposedNote = this.transposeNote(step, octave, alter, chromaticTranspose);
                     
                     // Convertir les durées MusicXML en unités du jeu
-                    // Dans MusicXML avec divisions=2: 8=ronde, 4=blanche, 2=noire, 1=croche
-                    // Dans le jeu: 16=ronde, 8=blanche, 4=noire, 2=croche
                     const gameDuration = (duration / divisions) * 4;
                     
                     melody.push({
-                        note: noteName,
+                        note: transposedNote,
                         duration: gameDuration,
                         startTime: (currentTime / divisions) * 4
                     });
@@ -836,13 +842,48 @@
                     currentTime += duration;
                 }
                 
-                console.log(`✅ ${melody.length} notes extraites du MusicXML`);
+                console.log(`✅ ${melody.length} notes extraites du MusicXML avec transposition`);
+                
+                // Debug: afficher les premières notes
+                console.log('🎼 Premières notes après transposition:');
+                for (let i = 0; i < Math.min(10, melody.length); i++) {
+                    console.log(`  ${i+1}. ${melody[i].note} (durée: ${melody[i].duration}, temps: ${melody[i].startTime})`);
+                }
+                
                 return melody;
                 
             } catch (error) {
                 console.error('❌ Erreur lors du parsing XML:', error);
                 throw error;
             }
+        }
+        
+        // ✅ NOUVELLE FONCTION: Transposer une note
+        transposeNote(step, octave, alter, chromaticTranspose) {
+            // Définir l'ordre chromatique des notes
+            const chromaticSteps = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            
+            // Convertir la note en index chromatique
+            let stepIndex = chromaticSteps.indexOf(step);
+            if (stepIndex === -1) {
+                console.warn(`Note inconnue: ${step}`);
+                return `${step}${octave}`;
+            }
+            
+            // Ajouter l'altération (dièse/bémol)
+            stepIndex += alter;
+            
+            // Ajouter la transposition
+            let totalSemitones = (octave * 12) + stepIndex + chromaticTranspose;
+            
+            // Calculer la nouvelle octave et la nouvelle note
+            const newOctave = Math.floor(totalSemitones / 12);
+            const newStepIndex = ((totalSemitones % 12) + 12) % 12; // Gérer les nombres négatifs
+            
+            const newStep = chromaticSteps[newStepIndex];
+            const finalNote = `${newStep}${newOctave}`;
+            
+            return finalNote;
         }
         
         async initializeGameNotes() {
