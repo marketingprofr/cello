@@ -1,19 +1,19 @@
-// Version robuste qui gère les erreurs
+// Version robuste qui gère les erreurs - CORRIGÉ v2.3.4
 (function() {
     'use strict';
     
     // ═══════════════════════════════════════
-    // 🎻 CELLO RHYTHM GAME v2.3.3
-    // CORRECTIF URGENT: 22/07/2025
+    // 🎻 CELLO RHYTHM GAME v2.3.4
+    // CORRECTIF DÉCALAGE NOTES: 31/07/2025
     // ═══════════════════════════════════════
     
-    const GAME_VERSION = "v2.3.3";
+    const GAME_VERSION = "v2.3.4";
     
     // VÉRIFICATION IMMÉDIATE DE LA VERSION
     console.log('%c═══════════════════════════════════════', 'color: #4CAF50; font-weight: bold;');
-    console.log('%c🎻 CELLO RHYTHM GAME v2.3.3', 'color: #4CAF50; font-size: 16px; font-weight: bold;');
-    console.log('%c📅 BUILD: 22/07/2025 - CORRECTIF URGENT', 'color: #4CAF50; font-weight: bold;');
-    console.log('%c🔧 BOUTONS RÉPARÉS', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
+    console.log('%c🎻 CELLO RHYTHM GAME v2.3.4', 'color: #4CAF50; font-size: 16px; font-weight: bold;');
+    console.log('%c📅 BUILD: 31/07/2025 - CORRECTION DÉCALAGE NOTES', 'color: #4CAF50; font-weight: bold;');
+    console.log('%c🎯 CENTRAGE NOTES CORRIGÉ', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
     console.log('%c═══════════════════════════════════════', 'color: #4CAF50; font-weight: bold;');
     
     let game = null;
@@ -97,8 +97,8 @@
             console.log(`🎻 Creating CelloRhythmGame instance ${GAME_VERSION}...`);
             console.log('═══════════════════════════════════════');
             console.log('🎼 Ave Maria de Gounod - Violoncelle');
-            console.log('📅 Build: 22/07/2025 - CORRECTIF URGENT v2.3.3');
-            console.log('🔧 Mode: Ultra-robust + Tuning mode');
+            console.log('📅 Build: 31/07/2025 - CORRECTIF DÉCALAGE v2.3.4');
+            console.log('🎯 Mode: Ultra-robust + Centrage corrigé');
             console.log('═══════════════════════════════════════');
             
             // Vérification que les éléments de base existent avant tout
@@ -138,7 +138,7 @@
             this.setupCanvas();
             this.initializeGameNotes();
             
-            console.log('✅ CelloRhythmGame created successfully - v2.3.3 FIXED');
+            console.log('✅ CelloRhythmGame created successfully - v2.3.4 CENTRAGE FIXÉ');
             
             // Démarrer l'animation - AVEC protection d'erreur
             try {
@@ -478,42 +478,56 @@
             }
             
             const currentTime = (Date.now() - this.startTime) / 1000;
+            const hitLineX = GAME_CONFIG.hitLineX || 150;
+            const noteRadius = GAME_CONFIG.noteRadius || 12;
             
             // Chercher les notes dans la fenêtre de jugement
             for (const note of this.gameNotes) {
                 if (note.played || note.missed) continue;
                 
-                const noteTime = note.startTime;
-                const timeDifference = Math.abs(currentTime - noteTime);
+                // NOUVEAU v2.3.4 : Vérifier la position spatiale ET temporelle
+                const noteDistanceFromHitLine = Math.abs(note.x - hitLineX);
+                const spatialTolerance = noteRadius + 15; // Tolérance spatiale de ±15px autour du rayon
                 
-                if (timeDifference <= GAME_CONFIG.judgmentWindow / 1000) {
-                    if (detectedNote === note.note) {
-                        // Note correcte, calculer la précision
-                        const expectedFreq = NOTE_FREQUENCIES[note.note];
-                        const centsDifference = Math.abs(getCentsDifference(expectedFreq, frequency));
-                        
-                        note.played = true;
-                        this.combo++;
-                        
-                        let judgment = 'miss';
-                        let points = 0;
-                        
-                        if (centsDifference <= GAME_CONFIG.perfectThreshold) {
-                            judgment = 'perfect';
-                            points = 100 + (this.combo * 10);
-                        } else if (centsDifference <= GAME_CONFIG.okThreshold) {
-                            judgment = 'ok';
-                            points = 50 + (this.combo * 5);
-                        } else {
-                            judgment = 'miss';
-                            this.combo = 0;
+                console.log(`🎯 Note ${note.note}: distance=${noteDistanceFromHitLine.toFixed(1)}px, tolérance=${spatialTolerance}px`);
+                
+                // La note doit être dans la zone de frappe spatiale
+                if (noteDistanceFromHitLine <= spatialTolerance) {
+                    const noteTime = note.startTime;
+                    const timeDifference = Math.abs(currentTime - noteTime);
+                    
+                    if (timeDifference <= GAME_CONFIG.judgmentWindow / 1000) {
+                        if (detectedNote === note.note) {
+                            // Note correcte, calculer la précision
+                            const expectedFreq = NOTE_FREQUENCIES[note.note];
+                            const centsDifference = Math.abs(getCentsDifference(expectedFreq, frequency));
+                            
+                            note.played = true;
+                            this.combo++;
+                            
+                            let judgment = 'miss';
+                            let points = 0;
+                            
+                            // NOUVEAU : Bonus pour la précision spatiale
+                            const spatialPrecision = 1 - (noteDistanceFromHitLine / spatialTolerance);
+                            
+                            if (centsDifference <= GAME_CONFIG.perfectThreshold) {
+                                judgment = 'perfect';
+                                points = Math.floor((100 + (this.combo * 10)) * (1 + spatialPrecision * 0.2));
+                            } else if (centsDifference <= GAME_CONFIG.okThreshold) {
+                                judgment = 'ok';
+                                points = Math.floor((50 + (this.combo * 5)) * (1 + spatialPrecision * 0.1));
+                            } else {
+                                judgment = 'miss';
+                                this.combo = 0;
+                            }
+                            
+                            this.score += points;
+                            this.showJudgment(judgment);
+                            this.updateUI();
+                            console.log(`🎯 Note played: ${detectedNote}, judgment: ${judgment}, spatial: ${noteDistanceFromHitLine.toFixed(1)}px, cents: ${centsDifference}`);
+                            break;
                         }
-                        
-                        this.score += points;
-                        this.showJudgment(judgment);
-                        this.updateUI();
-                        console.log(`🎯 Note played: ${detectedNote}, judgment: ${judgment}, cents: ${centsDifference}`);
-                        break;
                     }
                 }
             }
@@ -618,9 +632,15 @@
                     throw new Error('GAME_CONFIG not defined');
                 }
                 
+                const hitLineX = GAME_CONFIG.hitLineX || 150;
+                const scrollSpeed = GAME_CONFIG.scrollSpeed || 60;
+                
                 this.gameNotes = AVE_MARIA_MELODY.map((noteData, index) => {
-                    // Position initiale plus proche pour voir les notes arriver
-                    const startX = this.canvas.width + 50 + (noteData.startTime * GAME_CONFIG.scrollSpeed);
+                    // NOUVEAU v2.3.4 : Calculer la position pour que la note arrive exactement sur la ligne de frappe
+                    const timeToHitLine = noteData.startTime; // Temps en secondes
+                    const distanceToTravel = scrollSpeed * timeToHitLine; // Distance en pixels
+                    const startX = hitLineX + distanceToTravel; // Position de départ
+                    
                     const note = {
                         ...noteData,
                         x: startX,
@@ -630,29 +650,30 @@
                         id: index
                     };
                     
-                    console.log(`Note ${index}: ${noteData.note} at x=${note.x}, y=${note.y}, startTime=${noteData.startTime}`);
+                    console.log(`Note ${index}: ${noteData.note} start at x=${startX.toFixed(1)}, will hit line at t=${noteData.startTime}s`);
                     return note;
                 });
                 
-                console.log(`✅ ${this.gameNotes.length} notes initialized`);
+                console.log(`✅ ${this.gameNotes.length} notes initialized with precise timing`);
                 
                 // Ajouter quelques notes de test qui arrivent rapidement pour debug
                 this.gameNotes.unshift(
-                    { note: 'C3', x: this.canvas.width + 100, y: 130, startTime: 1, played: false, missed: false, id: -1 },
-                    { note: 'D3', x: this.canvas.width + 200, y: 110, startTime: 2, played: false, missed: false, id: -2 },
-                    { note: 'G3', x: this.canvas.width + 300, y: 80, startTime: 3, played: false, missed: false, id: -3 }
+                    { note: 'C3', x: hitLineX + 100, y: 130, startTime: 1, played: false, missed: false, id: -1 },
+                    { note: 'D3', x: hitLineX + 200, y: 110, startTime: 2, played: false, missed: false, id: -2 },
+                    { note: 'G3', x: hitLineX + 300, y: 80, startTime: 3, played: false, missed: false, id: -3 }
                 );
-                console.log('🔧 Ajout de 3 notes de test pour debug');
+                console.log('🔧 Ajout de 3 notes de test pour debug - position correctement calculée');
                 
             } catch (error) {
                 console.error('❌ Error initializing notes:', error);
+                const hitLineX = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.hitLineX : 150;
                 this.gameNotes = [
                     // Notes de secours avec des positions visibles
-                    { note: 'C3', x: this.canvas.width - 100, y: 130, startTime: 1, played: false, missed: false, id: 0 },
-                    { note: 'D3', x: this.canvas.width + 50, y: 110, startTime: 2, played: false, missed: false, id: 1 },
-                    { note: 'G3', x: this.canvas.width + 150, y: 80, startTime: 3, played: false, missed: false, id: 2 }
+                    { note: 'C3', x: hitLineX - 100, y: 130, startTime: 1, played: false, missed: false, id: 0 },
+                    { note: 'D3', x: hitLineX + 50, y: 110, startTime: 2, played: false, missed: false, id: 1 },
+                    { note: 'G3', x: hitLineX + 150, y: 80, startTime: 3, played: false, missed: false, id: 2 }
                 ];
-                console.log('⚠️ Using fallback notes');
+                console.log('⚠️ Using fallback notes with corrected positioning');
             }
         }
         
@@ -690,11 +711,14 @@
         
         checkMissedNotes() {
             const hitLineX = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.hitLineX : 150;
+            const noteRadius = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.noteRadius : 12;
+            
             for (const note of this.gameNotes) {
-                if (!note.played && !note.missed && note.x < hitLineX - 50) {
+                // CORRIGÉ v2.3.4 : La note est "ratée" quand son CENTRE dépasse la ligne + une marge
+                if (!note.played && !note.missed && note.x < hitLineX - noteRadius - 20) {
                     note.missed = true;
                     this.combo = 0;
-                    console.log(`❌ Note missed: ${note.note}`);
+                    console.log(`❌ Note missed: ${note.note} at x=${note.x.toFixed(1)} (hitLine=${hitLineX})`);
                 }
             }
         }
@@ -740,7 +764,7 @@
                     strokeColor = '#D32F2F';
                 }
                 
-                // Dessiner la note avec contour
+                // Dessiner la note avec contour - RESTE CENTRÉ sur note.x
                 this.ctx.fillStyle = color;
                 this.ctx.strokeStyle = strokeColor;
                 this.ctx.lineWidth = 2;
@@ -805,6 +829,9 @@
         
         drawHitLine() {
             const hitLineX = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.hitLineX : 150;
+            const noteRadius = (typeof GAME_CONFIG !== 'undefined') ? GAME_CONFIG.noteRadius : 12;
+            
+            // Ligne de frappe principale
             this.ctx.strokeStyle = '#FF5722';
             this.ctx.lineWidth = 3;
             this.ctx.setLineDash([10, 5]);
@@ -813,6 +840,22 @@
             this.ctx.lineTo(hitLineX, 160);
             this.ctx.stroke();
             this.ctx.setLineDash([]);
+            
+            // NOUVEAU v2.3.4 : Ajouter une zone de frappe visible
+            this.ctx.strokeStyle = 'rgba(255, 87, 34, 0.3)';
+            this.ctx.lineWidth = 1;
+            this.ctx.setLineDash([5, 5]);
+            
+            // Zone de tolérance spatiale (±noteRadius + 15px)
+            const tolerance = noteRadius + 15;
+            this.ctx.strokeRect(hitLineX - tolerance, 20, tolerance * 2, 140);
+            this.ctx.setLineDash([]);
+            
+            // Texte d'aide
+            this.ctx.fillStyle = 'rgba(255, 87, 34, 0.7)';
+            this.ctx.font = '10px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('Zone de frappe', hitLineX, 15);
         }
     }
     
