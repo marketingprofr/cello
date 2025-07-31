@@ -810,14 +810,17 @@
                 const divisions = divisionsElement ? parseInt(divisionsElement.textContent) : 2;
                 console.log(`📏 Divisions trouvées: ${divisions} (1 noire = ${divisions} unités)`);
                 
-                // ✅ NOUVEAU: Extraire la transposition
+                // ✅ CORRECTION: Extraire la transposition et l'inverser
                 const transposeElement = xmlDoc.querySelector('transpose');
                 let chromaticTranspose = 0;
                 if (transposeElement) {
                     const chromaticElement = transposeElement.querySelector('chromatic');
                     if (chromaticElement) {
-                        chromaticTranspose = parseInt(chromaticElement.textContent);
-                        console.log(`🎵 Transposition trouvée: ${chromaticTranspose} demi-tons`);
+                        // ✅ CORRECTION: Inverser la transposition 
+                        // XML: +12 = écrit 1 octave plus haut que la réalité
+                        // Donc on applique -12 pour avoir les vraies notes
+                        chromaticTranspose = -parseInt(chromaticElement.textContent);
+                        console.log(`🎵 Transposition XML: ${-chromaticTranspose}, appliquée: ${chromaticTranspose} demi-tons`);
                     }
                 }
                 
