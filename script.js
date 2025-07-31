@@ -114,6 +114,7 @@
             this.score = 0;
             this.combo = 0;
             this.gameNotes = [];
+            this.measures = []; // ✅ NOUVEAU: Array des mesures
             
             // Variables audio avec stabilisation SIMPLE
             this.currentVolume = 0;
@@ -793,61 +794,88 @@
                     }
                 }
                 
-                // Extraire toutes les notes
-                const noteElements = xmlDoc.querySelectorAll('note');
-                console.log(`🎵 ${noteElements.length} éléments <note> trouvés dans le XML`);
+                // ✅ NOUVEAU: Extraire les mesures
+                const measureElements = xmlDoc.querySelectorAll('measure');
+                console.log(`📊 ${measureElements.length} mesures trouvées dans le XML`);
                 
                 const melody = [];
+                const measures = []; // ✅ NOUVEAU: Array des mesures
                 let currentTime = 0;
                 
-                for (const noteElement of noteElements) {
-                    const restElement = noteElement.querySelector('rest');
-                    const durationElement = noteElement.querySelector('duration');
+                for (const measureElement of measureElements) {
+                    const measureNumber = measureElement.getAttribute('number');
+                    const measureStartTime = currentTime;
                     
-                    if (!durationElement) continue;
-                    
-                    const duration = parseInt(durationElement.textContent);
-                    
-                    if (restElement) {
-                        // C'est un silence, avancer le temps sans ajouter de note
-                        currentTime += duration;
-                        continue;
-                    }
-                    
-                    const pitchElement = noteElement.querySelector('pitch');
-                    if (!pitchElement) continue;
-                    
-                    const stepElement = pitchElement.querySelector('step');
-                    const octaveElement = pitchElement.querySelector('octave');
-                    const alterElement = pitchElement.querySelector('alter');
-                    
-                    if (!stepElement || !octaveElement) continue;
-                    
-                    const step = stepElement.textContent;
-                    let octave = parseInt(octaveElement.textContent);
-                    const alter = alterElement ? parseInt(alterElement.textContent) : 0;
-                    
-                    // ✅ NOUVEAU: Appliquer la transposition
-                    let transposedNote = this.transposeNote(step, octave, alter, chromaticTranspose);
-                    
-                    // Convertir les durées MusicXML en unités du jeu
-                    const gameDuration = (duration / divisions) * 4;
-                    
-                    melody.push({
-                        note: transposedNote,
-                        duration: gameDuration,
-                        startTime: (currentTime / divisions) * 4
+                    // ✅ NOUVEAU: Ajouter la mesure
+                    measures.push({
+                        number: parseInt(measureNumber),
+                        startTime: (measureStartTime / divisions) * 4, // Convertir en unités du jeu
+                        xmlTime: measureStartTime
                     });
                     
-                    currentTime += duration;
+                    // Traiter toutes les notes de cette mesure
+                    const noteElements = measureElement.querySelectorAll('note');
+                    
+                    for (const noteElement of noteElements) {
+                        const restElement = noteElement.querySelector('rest');
+                        const durationElement = noteElement.querySelector('duration');
+                        
+                        if (!durationElement) continue;
+                        
+                        const duration = parseInt(durationElement.textContent);
+                        
+                        if (restElement) {
+                            // C'est un silence, avancer le temps sans ajouter de note
+                            currentTime += duration;
+                            continue;
+                        }
+                        
+                        const pitchElement = noteElement.querySelector('pitch');
+                        if (!pitchElement) continue;
+                        
+                        const stepElement = pitchElement.querySelector('step');
+                        const octaveElement = pitchElement.querySelector('octave');
+                        const alterElement = pitchElement.querySelector('alter');
+                        
+                        if (!stepElement || !octaveElement) continue;
+                        
+                        const step = stepElement.textContent;
+                        let octave = parseInt(octaveElement.textContent);
+                        const alter = alterElement ? parseInt(alterElement.textContent) : 0;
+                        
+                        // ✅ NOUVEAU: Appliquer la transposition
+                        let transposedNote = this.transposeNote(step, octave, alter, chromaticTranspose);
+                        
+                        // Convertir les durées MusicXML en unités du jeu
+                        const gameDuration = (duration / divisions) * 4;
+                        
+                        melody.push({
+                            note: transposedNote,
+                            duration: gameDuration,
+                            startTime: (currentTime / divisions) * 4,
+                            measureNumber: parseInt(measureNumber) // ✅ NOUVEAU: Numéro de mesure
+                        });
+                        
+                        currentTime += duration;
+                    }
                 }
                 
+                // ✅ NOUVEAU: Stocker les mesures dans l'instance
+                this.measures = measures;
+                
                 console.log(`✅ ${melody.length} notes extraites du MusicXML avec transposition`);
+                console.log(`✅ ${measures.length} mesures extraites du MusicXML`);
                 
                 // Debug: afficher les premières notes
                 console.log('🎼 Premières notes après transposition:');
                 for (let i = 0; i < Math.min(10, melody.length); i++) {
-                    console.log(`  ${i+1}. ${melody[i].note} (durée: ${melody[i].duration}, temps: ${melody[i].startTime})`);
+                    console.log(`  ${i+1}. ${melody[i].note} (mesure ${melody[i].measureNumber}, durée: ${melody[i].duration}, temps: ${melody[i].startTime})`);
+                }
+                
+                // Debug: afficher les premières mesures
+                console.log('📊 Premières mesures:');
+                for (let i = 0; i < Math.min(10, measures.length); i++) {
+                    console.log(`  Mesure ${measures[i].number}: temps ${measures[i].startTime}`);
                 }
                 
                 return melody;
@@ -898,6 +926,13 @@
             } catch (error) {
                 console.error('⚠️ Erreur lors du chargement du XML:', error);
                 console.log('⚠️ Utilisation de la mélodie de test à la place');
+                
+                // ✅ NOUVEAU: Créer des mesures de fallback
+                this.measures = [
+                    { number: 1, startTime: 0 },
+                    { number: 2, startTime: 16 },
+                    { number: 3, startTime: 32 }
+                ];
             }
             
             this.gameNotes = melodyToUse.map((noteData, index) => {
@@ -918,13 +953,15 @@
             });
             
             console.log(`✅ ${this.gameNotes.length} notes d'Ave Maria initialisées avec durées visuelles`);
+            console.log(`✅ ${this.measures.length} mesures initialisées`);
             
             // Afficher quelques exemples dans la console
             if (this.gameNotes.length > 0) {
                 console.log('📋 Exemples de notes avec durées (depuis sheet1.xml):');
                 for (let i = 0; i < Math.min(5, this.gameNotes.length); i++) {
                     const note = this.gameNotes[i];
-                    console.log(`  ${note.note}: durée=${note.duration}, largeur=${note.width}px, startTime=${note.startTime}`);
+                    const measureInfo = note.measureNumber ? ` (mesure ${note.measureNumber})` : '';
+                    console.log(`  ${note.note}: durée=${note.duration}, largeur=${note.width}px, startTime=${note.startTime}${measureInfo}`);
                 }
             }
         }
@@ -961,6 +998,7 @@
                 
                 this.drawStaff();
                 this.drawClef();
+                this.drawMeasureBars(); // ✅ NOUVEAU: Barres de mesure
                 this.drawGameNotes();
                 this.drawHitLine();
                 this.drawPlayedNote(); // NOUVEAU : Note jouée en temps réel
@@ -1009,6 +1047,41 @@
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.fillText('𝄢', 40, 90); // Clé de fa
+        }
+        
+        drawMeasureBars() {
+            if (!this.measures || this.measures.length === 0) return;
+            
+            // Configuration pour les barres de mesure
+            const timeScale = GAME_CONFIG.scrollSpeed / 4;
+            const currentGameTime = this.isPlaying ? this.currentTime : 0;
+            
+            this.ctx.strokeStyle = '#888888'; // Gris pour les barres de mesure
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([]);
+            
+            // Font pour les numéros de mesure
+            this.ctx.fillStyle = '#CCCCCC';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'bottom';
+            
+            for (const measure of this.measures) {
+                // Calculer la position X de la barre de mesure
+                const measureX = this.canvas.width + 100 + (measure.startTime * timeScale) - (currentGameTime * timeScale * 4);
+                
+                // Ne dessiner que les barres visibles
+                if (measureX < -50 || measureX > this.canvas.width + 50) continue;
+                
+                // Dessiner la barre verticale
+                this.ctx.beginPath();
+                this.ctx.moveTo(measureX, 40); // Un peu au-dessus de la portée
+                this.ctx.lineTo(measureX, 140); // Un peu en-dessous de la portée
+                this.ctx.stroke();
+                
+                // Dessiner le numéro de mesure au-dessus
+                this.ctx.fillText(measure.number.toString(), measureX, 35);
+            }
         }
         
         drawGameNotes() {
