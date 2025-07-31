@@ -12,7 +12,9 @@
         'F#3': 185.00, 'G3': 196.00, 'G#3': 207.65, 'A3': 220.00, 'A#3': 233.08, 'B3': 246.94,
         'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13, 'E4': 329.63, 'F4': 349.23,
         'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
-        'C5': 523.25
+        'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25, 'E5': 659.25, 'F5': 698.46,
+        'F#5': 739.99, 'G5': 783.99, 'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'B5': 987.77,
+        'C6': 1046.50, 'C#6': 1108.73, 'D6': 1174.66, 'D#6': 1244.51, 'E6': 1318.51, 'F6': 1396.91
     };
     
     const FRENCH_NAMES = {
@@ -30,7 +32,7 @@
         staffLineY: [50, 70, 90, 110, 130]
     };
     
-    // Positions des notes sur la portée (clé de fa) - COMPLÈTES
+    // Positions des notes sur la portée (clé de fa) - COMPLÈTES + ÉTENDUES
     const STAFF_POSITIONS = {
         // Notes très graves (en dessous de la portée)
         'C1': 210, 'D1': 200, 'E1': 190, 'F1': 180, 'G1': 170, 'A1': 160, 'B1': 150,
@@ -44,14 +46,16 @@
         
         // Notes aiguës (au-dessus de la portée)
         'C4': 60, 'D4': 50, 'E4': 40, 'F4': 30, 'G4': 20, 'A4': 10, 'B4': 0,
-        'C5': -10, 'D5': -20, 'E5': -30, 'F5': -40, 'G5': -50,
+        'C5': -10, 'D5': -20, 'E5': -30, 'F5': -40, 'G5': -50, 'A5': -60, 'B5': -70,
+        'C6': -80, 'D6': -90, 'E6': -100, 'F6': -110, 'G6': -120,
         
         // Notes avec dièses/bémols
         'C#1': 205, 'D#1': 195, 'F#1': 175, 'G#1': 165, 'A#1': 155,
         'C#2': 165, 'D#2': 155, 'F#2': 135, 'G#2': 125, 'A#2': 115,
         'C#3': 125, 'D#3': 115, 'F#3': 95, 'G#3': 85, 'A#3': 75,
         'C#4': 55, 'D#4': 45, 'F#4': 25, 'G#4': 15, 'A#4': 5,
-        'C#5': -15, 'D#5': -25, 'F#5': -45, 'G#5': -55, 'A#5': -65
+        'C#5': -15, 'D#5': -25, 'F#5': -45, 'G#5': -55, 'A#5': -65,
+        'C#6': -85, 'D#6': -95, 'F#6': -115, 'G#6': -125, 'A#6': -135
     };
     
     // Mélodie simple pour test (fallback si XML échoue)
@@ -1110,6 +1114,11 @@
         drawGameNotes() {
             let visibleCount = 0;
             
+            if (!this.gameNotes || this.gameNotes.length === 0) {
+                console.warn('❌ Aucune note dans gameNotes !');
+                return;
+            }
+            
             for (const note of this.gameNotes) {
                 // Vérifier si la note (avec sa largeur) est visible
                 if (note.x + note.width < -50 || note.x > this.canvas.width + 50) continue;
@@ -1175,12 +1184,25 @@
                 this.drawLedgerLines(note, strokeColor);
             }
             
+            // Debug: afficher le nombre de notes visibles
+            if (this.isPlaying && visibleCount === 0) {
+                console.warn(`⚠️ Aucune note visible ! Total notes: ${this.gameNotes.length}, temps: ${this.currentTime.toFixed(2)}s`);
+            }
+            
             // Message si pas de notes visibles
             if (visibleCount === 0 && this.isPlaying && this.currentTime < 15) {
                 this.ctx.fillStyle = '#FF5722';
                 this.ctx.font = 'bold 16px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText('Les notes arrivent...', this.canvas.width / 2, 30);
+                
+                // Debug: afficher la position de la première note
+                if (this.gameNotes.length > 0) {
+                    const firstNote = this.gameNotes[0];
+                    this.ctx.fillStyle = '#FFA500';
+                    this.ctx.font = '12px Arial';
+                    this.ctx.fillText(`Première note: ${firstNote.note} à x=${Math.round(firstNote.x)}`, this.canvas.width / 2, 50);
+                }
             }
         }
         
