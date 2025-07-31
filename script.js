@@ -1101,7 +1101,7 @@
         drawMeasureBars() {
             if (!this.measures || this.measures.length === 0) return;
             
-            // ✅ SYNCHRONISATION: Même vitesse que les notes
+            // ✅ SYNCHRONISATION: Même calcul que les notes
             const currentGameTime = this.isPlaying ? this.currentTime : 0;
             
             this.ctx.strokeStyle = '#888888'; // Gris pour les barres de mesure
@@ -1115,13 +1115,15 @@
             this.ctx.textBaseline = 'bottom';
             
             for (const measure of this.measures) {
-                // ✅ CALCUL CORRIGÉ: Conversion XML time -> temps de jeu -> position X
-                // startTime du XML est en unités de divisions (2 = noire)
+                // ✅ CORRECTION DÉCALAGE: Même calcul que les notes + correction de 2 temps
                 const timeInBeats = measure.startTime / 2; // Convertir en noires
                 const timeInSeconds = timeInBeats * (60 / GAME_CONFIG.tempo); // À 60 BPM
                 
-                // Position X de la mesure = position initiale - déplacement
-                const measureX = (this.canvas.width + 200) + (timeInSeconds * GAME_CONFIG.scrollSpeed) - (currentGameTime * GAME_CONFIG.scrollSpeed);
+                // ✅ CORRECTION DÉCALAGE: Avancer les mesures de 2 temps (2 secondes à 60 BPM)
+                const correctedTimeInSeconds = timeInSeconds - 2; // Correction de 2 noires
+                
+                // ✅ CORRECTION: Utiliser exactement la même formule que updateGameNotes()
+                const measureX = (this.canvas.width + 200) + (correctedTimeInSeconds * GAME_CONFIG.scrollSpeed) - (currentGameTime * GAME_CONFIG.scrollSpeed);
                 
                 // Ne dessiner que les barres visibles
                 if (measureX < -50 || measureX > this.canvas.width + 50) continue;
@@ -1225,22 +1227,6 @@
             // Debug: afficher le nombre de notes visibles
             if (this.isPlaying && visibleCount === 0) {
                 console.warn(`⚠️ Aucune note visible ! Total notes: ${this.gameNotes.length}, temps: ${this.currentTime.toFixed(2)}s`);
-            }
-            
-            // Message si pas de notes visibles
-            if (visibleCount === 0 && this.isPlaying && this.currentTime < 15) {
-                this.ctx.fillStyle = '#FF5722';
-                this.ctx.font = 'bold 16px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText('Les notes arrivent... (Tempo 60 BPM)', this.canvas.width / 2, 30);
-                
-                // Debug: afficher la position de la première note
-                if (this.gameNotes.length > 0) {
-                    const firstNote = this.gameNotes[0];
-                    this.ctx.fillStyle = '#FFA500';
-                    this.ctx.font = '12px Arial';
-                    this.ctx.fillText(`Première note: ${firstNote.note} à x=${Math.round(firstNote.x)} (largeur=${Math.round(firstNote.width)})`, this.canvas.width / 2, 50);
-                }
             }
         }
         
