@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('🎻 CELLO RHYTHM GAME v2.5.4 - TEMPO 60 BPM SYNCHRONISÉ (FIX DÉCALAGE)');
+    console.log('🎻 CELLO RHYTHM GAME v2.5.5 - NOTES ALIGNÉES AU DÉBUT DES MESURES (FIX ALIGNEMENT)');
     
     // ═══ DONNÉES INTÉGRÉES ═══
     const NOTE_FREQUENCIES = {
@@ -102,7 +102,7 @@
     
     class CelloRhythmGame {
         constructor() {
-            console.log('🎻 Creating COMPLETE game v2.5.3 (Tempo 60 BPM - fix décalage)...');
+            console.log('🎻 Creating COMPLETE game v2.5.5 (Notes alignées au début des mesures)...');
             
             // Variables de base
             this.microphoneActive = false;
@@ -140,7 +140,7 @@
             // Démarrer l'animation
             this.animate();
             
-            console.log('✅ COMPLETE game created v2.5.3 (Tempo 60 BPM - fix décalage)');
+            console.log('✅ COMPLETE game created v2.5.5 (Notes alignées au début des mesures)');
         }
         
         initializeElements() {
@@ -687,7 +687,7 @@
         }
         
         showDebugInfo() {
-            console.log('🔧 DEBUG INFO v2.5.3 - TEMPO 60 BPM SYNCHRONISÉ (FIX DÉCALAGE):');
+            console.log('🔧 DEBUG INFO v2.5.5 - NOTES ALIGNÉES AU DÉBUT DES MESURES (FIX ALIGNEMENT):');
             console.log(`Microphone: ${this.microphoneActive ? 'Actif' : 'Inactif'}`);
             console.log(`Détection: ${this.pitchDetectionActive ? 'Active (YIN Graves+)' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
@@ -712,11 +712,11 @@
             // Debug des premières notes visibles avec durées
             const visibleNotesArray = this.gameNotes.filter(n => n.x > -50 && n.x < this.canvas.width + 50);
             if (visibleNotesArray.length > 0) {
-                console.log(`🎵 NOTES VISIBLES (avec durées):`);
+                console.log(`🎵 NOTES VISIBLES (alignement au début):`);
                 for (let i = 0; i < Math.min(5, visibleNotesArray.length); i++) {
                     const note = visibleNotesArray[i];
                     const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
-                    console.log(`  ${note.note} (${noteType}) - x:${Math.round(note.x)}, largeur:${Math.round(note.width)}px, durée:${note.durationInSeconds}s`);
+                    console.log(`  ${note.note} (${noteType}) - début:${Math.round(note.x)}, largeur:${Math.round(note.width)}px, durée:${note.durationInSeconds}s`);
                 }
             } else {
                 console.log(`❌ AUCUNE NOTE VISIBLE !`);
@@ -725,7 +725,7 @@
                     for (let i = 0; i < Math.min(5, totalNotes); i++) {
                         const note = this.gameNotes[i];
                         const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
-                        console.log(`  ${note.note} (${noteType}) - x:${Math.round(note.x)}, startTime:${note.startTime}, currentTime:${this.currentTime}`);
+                        console.log(`  ${note.note} (${noteType}) - début:${Math.round(note.x)}, startTime:${note.startTime}, currentTime:${this.currentTime}`);
                     }
                 }
             }
@@ -755,7 +755,7 @@
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
             
-            this.debugStatusElement.textContent = 'Debug v2.5.3 (TEMPO 60 BPM - fix décalage) affiché en console (F12)';
+            this.debugStatusElement.textContent = 'Debug v2.5.5 (Notes alignées) affiché en console (F12)';
         }
         
         setupCanvas() {
@@ -988,7 +988,8 @@
                 const startTimeInBeats = noteData.startTime / 2; // Convertir startTime XML en noires
                 const startTimeInSeconds = startTimeInBeats * (60 / GAME_CONFIG.tempo); // À 60 BPM
                 
-                // Position de départ : assez loin pour laisser le temps de voir venir
+                // ✅ FIX ALIGNEMENT: Position de départ pour que la note COMMENCE à la ligne de jeu au bon moment
+                // Calculer où la note doit être maintenant pour arriver à la ligne de jeu au bon moment
                 const startX = this.canvas.width + 200 + (startTimeInSeconds * GAME_CONFIG.scrollSpeed);
                 
                 // ✅ LARGEUR CORRECTE: Proportionnelle à la durée en secondes
@@ -996,7 +997,7 @@
                 
                 return {
                     ...noteData,
-                    x: startX,
+                    x: startX, // ✅ FIX: Position où la note COMMENCE (pas le centre)
                     y: STAFF_POSITIONS[noteData.note] || 90,
                     width: Math.max(noteWidth, 15), // Largeur minimum de 15px
                     durationInSeconds: durationInSeconds, // Stocker pour debug
@@ -1007,17 +1008,17 @@
                 };
             });
             
-            console.log(`✅ ${this.gameNotes.length} notes d'Ave Maria initialisées avec durées correctes (60 BPM)`);
+            console.log(`✅ ${this.gameNotes.length} notes d'Ave Maria initialisées avec alignement au début (60 BPM)`);
             console.log(`✅ ${this.measures.length} mesures initialisées`);
             
             // Afficher quelques exemples dans la console
             if (this.gameNotes.length > 0) {
-                console.log('📋 Exemples de notes avec durées correctes (60 BPM):');
+                console.log('📋 Exemples de notes avec alignement au début (60 BPM):');
                 for (let i = 0; i < Math.min(5, this.gameNotes.length); i++) {
                     const note = this.gameNotes[i];
                     const measureInfo = note.measureNumber ? ` (mesure ${note.measureNumber})` : '';
                     const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
-                    console.log(`  ${note.note}: ${noteType} (${note.durationInSeconds}s), largeur=${Math.round(note.width)}px${measureInfo}`);
+                    console.log(`  ${note.note}: ${noteType} (${note.durationInSeconds}s), début=${Math.round(note.x)}px, largeur=${Math.round(note.width)}px${measureInfo}`);
                 }
             }
         }
@@ -1072,8 +1073,8 @@
             const currentGameTime = this.currentTime;
             
             for (const note of this.gameNotes) {
-                // Calculer la position X basée sur le temps de jeu actuel
-                // Position initiale - déplacement basé sur le temps
+                // ✅ FIX ALIGNEMENT: Calculer la position X basée sur le temps de jeu actuel
+                // La note COMMENCE à sa position initiale et se déplace vers la gauche
                 const initialX = this.canvas.width + 200 + (note.startTimeInSeconds * GAME_CONFIG.scrollSpeed);
                 note.x = initialX - (currentGameTime * GAME_CONFIG.scrollSpeed);
             }
@@ -1081,7 +1082,7 @@
         
         checkMissedNotes() {
             for (const note of this.gameNotes) {
-                // ✅ CORRECTION: Une note est ratée quand sa fin (x + width) dépasse la ligne de jeu
+                // ✅ CORRECTION ALIGNEMENT: Une note est ratée quand sa fin (x + width) dépasse la ligne de jeu
                 const noteEnd = note.x + note.width;
                 if (!note.played && !note.missed && noteEnd < GAME_CONFIG.hitLineX - 10) {
                     note.missed = true;
@@ -1159,7 +1160,7 @@
             }
             
             for (const note of this.gameNotes) {
-                // Vérifier si la note (avec sa largeur) est visible
+                // ✅ FIX ALIGNEMENT: Vérifier si la note (avec sa largeur) est visible
                 if (note.x + note.width < -50 || note.x > this.canvas.width + 50) continue;
                 visibleCount++;
                 
@@ -1179,28 +1180,28 @@
                 this.ctx.strokeStyle = strokeColor;
                 this.ctx.lineWidth = 2;
                 
-                // ✅ FORMES SELON LA DURÉE ET LARGEUR
+                // ✅ FIX ALIGNEMENT: Formes selon la durée ALIGNÉES AU DÉBUT
                 if (note.width <= 30) {
-                    // Notes courtes : cercle classique
+                    // Notes courtes : cercle classique au DÉBUT de la note
                     this.ctx.beginPath();
-                    this.ctx.arc(note.x, note.y, GAME_CONFIG.noteRadius, 0, 2 * Math.PI);
+                    this.ctx.arc(note.x + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius, 0, 2 * Math.PI);
                     this.ctx.fill();
                     this.ctx.stroke();
                 } else {
-                    // Notes longues : rectangle arrondi représentant la durée
+                    // ✅ FIX ALIGNEMENT: Notes longues : rectangle arrondi qui COMMENCE à note.x
                     const height = GAME_CONFIG.noteRadius * 1.8;
                     const radius = Math.min(8, note.width / 6);
                     
-                    // Rectangle principal représentant la durée
+                    // Rectangle principal représentant la durée, ALIGNÉ au DÉBUT
                     this.ctx.beginPath();
-                    this.ctx.roundRect(note.x - note.width/2, note.y - height/2, note.width, height, radius);
+                    this.ctx.roundRect(note.x, note.y - height/2, note.width, height, radius);
                     this.ctx.fill();
                     this.ctx.stroke();
                     
-                    // Tête de note au début pour la lisibilité
+                    // ✅ FIX ALIGNEMENT: Tête de note au DÉBUT (pas décalée)
                     this.ctx.fillStyle = strokeColor; // Couleur plus foncée pour la tête
                     this.ctx.beginPath();
-                    this.ctx.arc(note.x - note.width/2 + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 1, 0, 2 * Math.PI);
+                    this.ctx.arc(note.x + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 1, 0, 2 * Math.PI);
                     this.ctx.fill();
                     
                     // Pour les rondes (duration=8), dessiner différemment
@@ -1208,7 +1209,7 @@
                         // Contour de ronde (note creuse)
                         this.ctx.fillStyle = '#000000'; // Fond noir pour faire le trou
                         this.ctx.beginPath();
-                        this.ctx.arc(note.x - note.width/2 + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 4, 0, 2 * Math.PI);
+                        this.ctx.arc(note.x + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 4, 0, 2 * Math.PI);
                         this.ctx.fill();
                     }
                 }
@@ -1220,18 +1221,19 @@
                     this.ctx.textAlign = 'center';
                     this.ctx.textBaseline = 'middle';
                     const frenchName = getNoteFrenchName(note.note);
-                    this.ctx.fillText(frenchName, note.x, note.y - 25);
+                    // ✅ FIX ALIGNEMENT: Centrer le texte sur le DÉBUT de la note
+                    this.ctx.fillText(frenchName, note.x + GAME_CONFIG.noteRadius, note.y - 25);
                     
                     // Afficher la durée pour debug (premières 10 secondes)
                     if (this.currentTime < 10) {
                         this.ctx.font = '9px Arial';
                         this.ctx.fillStyle = '#ccc';
                         const durationText = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : note.duration.toString();
-                        this.ctx.fillText(durationText, note.x, note.y + 25);
+                        this.ctx.fillText(durationText, note.x + GAME_CONFIG.noteRadius, note.y + 25);
                     }
                 }
                 
-                // Lignes supplémentaires si nécessaire
+                // ✅ FIX ALIGNEMENT: Lignes supplémentaires centrées sur le DÉBUT de la note
                 this.drawLedgerLines(note, strokeColor);
             }
             
@@ -1243,6 +1245,8 @@
         
         drawLedgerLines(note, strokeColor) {
             const staffLines = GAME_CONFIG.staffLineY;
+            // ✅ FIX ALIGNEMENT: Centrer les lignes sur le DÉBUT de la note
+            const noteCenterX = note.x + GAME_CONFIG.noteRadius;
             
             if (note.y < staffLines[0] - 5) {
                 // Lignes au-dessus
@@ -1251,8 +1255,8 @@
                 let lineY = staffLines[0] - 20;
                 while (lineY >= note.y - 10) {
                     this.ctx.beginPath();
-                    this.ctx.moveTo(note.x - 15, lineY);
-                    this.ctx.lineTo(note.x + 15, lineY);
+                    this.ctx.moveTo(noteCenterX - 15, lineY);
+                    this.ctx.lineTo(noteCenterX + 15, lineY);
                     this.ctx.stroke();
                     lineY -= 20;
                 }
@@ -1263,8 +1267,8 @@
                 let lineY = staffLines[4] + 20;
                 while (lineY <= note.y + 10) {
                     this.ctx.beginPath();
-                    this.ctx.moveTo(note.x - 15, lineY);
-                    this.ctx.lineTo(note.x + 15, lineY);
+                    this.ctx.moveTo(noteCenterX - 15, lineY);
+                    this.ctx.lineTo(noteCenterX + 15, lineY);
                     this.ctx.stroke();
                     lineY += 20;
                 }
