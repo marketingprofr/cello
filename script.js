@@ -28,7 +28,7 @@
         perfectThreshold: 35,
         okThreshold: 70,
         judgmentWindow: 800,
-        noteRadius: 14,
+        noteRadius: 8, // Réduit de 14 à 8 pour des notes plus fines
         staffLineY: [50, 70, 90, 110, 130],
         tempo: 60 // BPM - 1 noire = 1 seconde
     };
@@ -1189,8 +1189,8 @@
                     this.ctx.stroke();
                 } else {
                     // ✅ FIX ALIGNEMENT: Notes longues : rectangle arrondi qui COMMENCE à note.x
-                    const height = GAME_CONFIG.noteRadius * 1.8;
-                    const radius = Math.min(8, note.width / 6);
+                    const height = GAME_CONFIG.noteRadius * 1.4; // Réduit de 1.8 à 1.4 pour des notes plus fines
+                    const radius = Math.min(6, note.width / 8); // Légèrement réduit aussi
                     
                     // Rectangle principal représentant la durée, ALIGNÉ au DÉBUT
                     this.ctx.beginPath();
@@ -1209,7 +1209,7 @@
                         // Contour de ronde (note creuse)
                         this.ctx.fillStyle = '#000000'; // Fond noir pour faire le trou
                         this.ctx.beginPath();
-                        this.ctx.arc(note.x + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 4, 0, 2 * Math.PI);
+                        this.ctx.arc(note.x + GAME_CONFIG.noteRadius, note.y, GAME_CONFIG.noteRadius - 3, 0, 2 * Math.PI); // Réduit de -4 à -3
                         this.ctx.fill();
                     }
                 }
@@ -1255,8 +1255,8 @@
                 let lineY = staffLines[0] - 20;
                 while (lineY >= note.y - 10) {
                     this.ctx.beginPath();
-                    this.ctx.moveTo(noteCenterX - 15, lineY);
-                    this.ctx.lineTo(noteCenterX + 15, lineY);
+                    this.ctx.moveTo(noteCenterX - 12, lineY); // Réduit de 15 à 12
+                    this.ctx.lineTo(noteCenterX + 12, lineY);
                     this.ctx.stroke();
                     lineY -= 20;
                 }
@@ -1267,8 +1267,8 @@
                 let lineY = staffLines[4] + 20;
                 while (lineY <= note.y + 10) {
                     this.ctx.beginPath();
-                    this.ctx.moveTo(noteCenterX - 15, lineY);
-                    this.ctx.lineTo(noteCenterX + 15, lineY);
+                    this.ctx.moveTo(noteCenterX - 12, lineY); // Réduit de 15 à 12
+                    this.ctx.lineTo(noteCenterX + 12, lineY);
                     this.ctx.stroke();
                     lineY += 20;
                 }
@@ -1326,7 +1326,7 @@
             this.ctx.strokeStyle = playedStroke;
             this.ctx.lineWidth = 3;
             this.ctx.beginPath();
-            this.ctx.arc(noteX, noteY, GAME_CONFIG.noteRadius + 2, 0, 2 * Math.PI);
+            this.ctx.arc(noteX, noteY, GAME_CONFIG.noteRadius + 1, 0, 2 * Math.PI); // Réduit de +2 à +1
             this.ctx.fill();
             this.ctx.stroke();
             
@@ -1365,8 +1365,8 @@
                 let lineY = staffLines[0] - 20;
                 while (lineY >= noteY - 10) {
                     this.ctx.beginPath();
-                    this.ctx.moveTo(noteX - 18, lineY);
-                    this.ctx.lineTo(noteX + 18, lineY);
+                    this.ctx.moveTo(noteX - 14, lineY); // Réduit de 18 à 14
+                    this.ctx.lineTo(noteX + 14, lineY);
                     this.ctx.stroke();
                     lineY -= 20;
                 }
@@ -1377,8 +1377,8 @@
                 let lineY = staffLines[4] + 20;
                 while (lineY <= noteY + 10) {
                     this.ctx.beginPath();
-                    this.ctx.moveTo(noteX - 18, lineY);
-                    this.ctx.lineTo(noteX + 18, lineY);
+                    this.ctx.moveTo(noteX - 14, lineY); // Réduit de 18 à 14
+                    this.ctx.lineTo(noteX + 14, lineY);
                     this.ctx.stroke();
                     lineY += 20;
                 }
