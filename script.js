@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('🎻 CELLO RHYTHM GAME v2.5.5 - NOTES ALIGNÉES AU DÉBUT DES MESURES (FIX ALIGNEMENT)');
+    console.log('🎻 CELLO RHYTHM GAME v2.5.6 - FIX CLIPPING NOTES (Ne plus masquer la clé de fa)');
     
     // ═══ DONNÉES INTÉGRÉES ═══
     const NOTE_FREQUENCIES = {
@@ -102,7 +102,7 @@
     
     class CelloRhythmGame {
         constructor() {
-            console.log('🎻 Creating COMPLETE game v2.5.5 (Notes alignées au début des mesures)...');
+            console.log('🎻 Creating COMPLETE game v2.5.6 (Fix clipping notes)...');
             
             // Variables de base
             this.microphoneActive = false;
@@ -140,7 +140,7 @@
             // Démarrer l'animation
             this.animate();
             
-            console.log('✅ COMPLETE game created v2.5.5 (Notes alignées au début des mesures)');
+            console.log('✅ COMPLETE game created v2.5.6 (Fix clipping notes)');
         }
         
         initializeElements() {
@@ -687,7 +687,7 @@
         }
         
         showDebugInfo() {
-            console.log('🔧 DEBUG INFO v2.5.5 - NOTES ALIGNÉES AU DÉBUT DES MESURES (FIX ALIGNEMENT):');
+            console.log('🔧 DEBUG INFO v2.5.6 - FIX CLIPPING NOTES (Ne plus masquer la clé de fa):');
             console.log(`Microphone: ${this.microphoneActive ? 'Actif' : 'Inactif'}`);
             console.log(`Détection: ${this.pitchDetectionActive ? 'Active (YIN Graves+)' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
@@ -700,7 +700,7 @@
             const totalNotes = this.gameNotes.length;
             const playedNotes = this.gameNotes.filter(n => n.played).length;
             const missedNotes = this.gameNotes.filter(n => n.missed).length;
-            const visibleNotes = this.gameNotes.filter(n => n.x > -50 && n.x < this.canvas.width + 50).length;
+            const visibleNotes = this.gameNotes.filter(n => n.x > 80 && n.x < this.canvas.width + 50).length;
             
             console.log(`🎼 MÉLODIE (Ave Maria à 60 BPM):`);
             console.log(`  Total: ${totalNotes} notes`);
@@ -710,7 +710,7 @@
             console.log(`  Tempo: ${GAME_CONFIG.tempo} BPM, Vitesse: ${GAME_CONFIG.scrollSpeed} px/s`);
             
             // Debug des premières notes visibles avec durées
-            const visibleNotesArray = this.gameNotes.filter(n => n.x > -50 && n.x < this.canvas.width + 50);
+            const visibleNotesArray = this.gameNotes.filter(n => n.x > 80 && n.x < this.canvas.width + 50);
             if (visibleNotesArray.length > 0) {
                 console.log(`🎵 NOTES VISIBLES (alignement au début):`);
                 for (let i = 0; i < Math.min(5, visibleNotesArray.length); i++) {
@@ -754,8 +754,9 @@
             
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
+            console.log(`✅ Clipping fix: Notes disparaissent à x=80 (avant la clé de fa)`);
             
-            this.debugStatusElement.textContent = 'Debug v2.5.5 (Notes alignées) affiché en console (F12)';
+            this.debugStatusElement.textContent = 'Debug v2.5.6 (Fix clipping) affiché en console (F12)';
         }
         
         setupCanvas() {
@@ -1032,7 +1033,7 @@
                     if (this.gameTimeElement) this.gameTimeElement.textContent = this.currentTime.toFixed(1);
                     
                     const activeNotes = this.gameNotes.filter(n => 
-                        n.x > -50 && n.x < this.canvas.width + 50 && !n.played && !n.missed
+                        n.x > 80 && n.x < this.canvas.width + 50 && !n.played && !n.missed
                     ).length;
                     if (this.activeNotesElement) this.activeNotesElement.textContent = activeNotes;
                 }
@@ -1083,6 +1084,7 @@
         checkMissedNotes() {
             for (const note of this.gameNotes) {
                 // ✅ CORRECTION ALIGNEMENT: Une note est ratée quand sa fin (x + width) dépasse la ligne de jeu
+                // ✅ FIX CLIPPING: Utiliser la même limite que pour l'affichage (x=80)
                 const noteEnd = note.x + note.width;
                 if (!note.played && !note.missed && noteEnd < GAME_CONFIG.hitLineX - 10) {
                     note.missed = true;
@@ -1137,8 +1139,8 @@
                 // ✅ CORRECTION: Même formule que updateGameNotes()
                 const measureX = (this.canvas.width + 200) + (timeInSeconds * GAME_CONFIG.scrollSpeed) - (currentGameTime * GAME_CONFIG.scrollSpeed);
                 
-                // Ne dessiner que les barres visibles
-                if (measureX < -50 || measureX > this.canvas.width + 50) continue;
+                // Ne dessiner que les barres visibles (même limite que les notes)
+                if (measureX < 80 || measureX > this.canvas.width + 50) continue;
                 
                 // Dessiner la barre verticale
                 this.ctx.beginPath();
@@ -1160,8 +1162,8 @@
             }
             
             for (const note of this.gameNotes) {
-                // ✅ FIX ALIGNEMENT: Vérifier si la note (avec sa largeur) est visible
-                if (note.x + note.width < -50 || note.x > this.canvas.width + 50) continue;
+                // ✅ FIX CLIPPING: Arrêter de dessiner les notes avant qu'elles atteignent la clé de fa (x=80)
+                if (note.x + note.width < 80 || note.x > this.canvas.width + 50) continue;
                 visibleCount++;
                 
                 let color = '#4CAF50';  // Vert pour les notes à venir
