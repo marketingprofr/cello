@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('🎻 CELLO RHYTHM GAME v2.5.6 - FIX CLIPPING NOTES (Ne plus masquer la clé de fa)');
+    console.log('🎻 CELLO RHYTHM GAME v2.6.0 - ZONES SÉPARÉES (Clé de fa protégée par clipping)');
     
     // ═══ DONNÉES INTÉGRÉES ═══
     const NOTE_FREQUENCIES = {
@@ -24,7 +24,7 @@
     
     const GAME_CONFIG = {
         scrollSpeed: 60, // pixels par seconde à 60 BPM
-        hitLineX: 150,
+        hitLineX: 180, // ✅ AJUSTER: Nouvelle position dans la zone droite
         perfectThreshold: 35,
         okThreshold: 70,
         judgmentWindow: 800,
@@ -102,7 +102,7 @@
     
     class CelloRhythmGame {
         constructor() {
-            console.log('🎻 Creating COMPLETE game v2.5.6 (Fix clipping notes)...');
+            console.log('🎻 Creating COMPLETE game v2.6.0 (Zones séparées avec clipping)...');
             
             // Variables de base
             this.microphoneActive = false;
@@ -140,7 +140,7 @@
             // Démarrer l'animation
             this.animate();
             
-            console.log('✅ COMPLETE game created v2.5.6 (Fix clipping notes)');
+            console.log('✅ COMPLETE game created v2.6.0 (Zones séparées avec clipping)');
         }
         
         initializeElements() {
@@ -687,7 +687,7 @@
         }
         
         showDebugInfo() {
-            console.log('🔧 DEBUG INFO v2.5.6 - FIX CLIPPING NOTES (Ne plus masquer la clé de fa):');
+            console.log('🔧 DEBUG INFO v2.6.0 - ZONES SÉPARÉES (Clé de fa protégée par clipping):');
             console.log(`Microphone: ${this.microphoneActive ? 'Actif' : 'Inactif'}`);
             console.log(`Détection: ${this.pitchDetectionActive ? 'Active (YIN Graves+)' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
@@ -700,7 +700,7 @@
             const totalNotes = this.gameNotes.length;
             const playedNotes = this.gameNotes.filter(n => n.played).length;
             const missedNotes = this.gameNotes.filter(n => n.missed).length;
-            const visibleNotes = this.gameNotes.filter(n => n.x > 80 && n.x < this.canvas.width + 50).length;
+            const visibleNotes = this.gameNotes.filter(n => n.x > 120 && n.x < this.canvas.width + 50).length;
             
             console.log(`🎼 MÉLODIE (Ave Maria à 60 BPM):`);
             console.log(`  Total: ${totalNotes} notes`);
@@ -710,9 +710,9 @@
             console.log(`  Tempo: ${GAME_CONFIG.tempo} BPM, Vitesse: ${GAME_CONFIG.scrollSpeed} px/s`);
             
             // Debug des premières notes visibles avec durées
-            const visibleNotesArray = this.gameNotes.filter(n => n.x > 80 && n.x < this.canvas.width + 50);
+            const visibleNotesArray = this.gameNotes.filter(n => n.x > 120 && n.x < this.canvas.width + 50);
             if (visibleNotesArray.length > 0) {
-                console.log(`🎵 NOTES VISIBLES (alignement au début):`);
+                console.log(`🎵 NOTES VISIBLES (zone droite uniquement):`);
                 for (let i = 0; i < Math.min(5, visibleNotesArray.length); i++) {
                     const note = visibleNotesArray[i];
                     const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
@@ -754,9 +754,10 @@
             
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
-            console.log(`✅ Clipping fix: Notes disparaissent à x=80 (avant la clé de fa)`);
+            console.log(`✅ ARCHITECTURE: Zone gauche (0-120px) fixe + Zone droite (120px+) avec clipping`);
+            console.log(`✅ Ligne de jeu: x=${GAME_CONFIG.hitLineX}px dans la zone droite`);
             
-            this.debugStatusElement.textContent = 'Debug v2.5.6 (Fix clipping) affiché en console (F12)';
+            this.debugStatusElement.textContent = 'Debug v2.6.0 (Zones séparées) affiché en console (F12)';
         }
         
         setupCanvas() {
@@ -1033,7 +1034,7 @@
                     if (this.gameTimeElement) this.gameTimeElement.textContent = this.currentTime.toFixed(1);
                     
                     const activeNotes = this.gameNotes.filter(n => 
-                        n.x > 80 && n.x < this.canvas.width + 50 && !n.played && !n.missed
+                        n.x > 120 && n.x < this.canvas.width + 50 && !n.played && !n.missed
                     ).length;
                     if (this.activeNotesElement) this.activeNotesElement.textContent = activeNotes;
                 }
@@ -1054,12 +1055,15 @@
                     this.checkMissedNotes();
                 }
                 
+                // ✅ NOUVEAU ORDRE : Zone gauche d'abord (fixe)
+                this.drawLeftZone(); // Clé de fa + indicateurs (zone fixe)
+                
+                // Zone droite (avec mouvement)
                 this.drawStaff();
-                this.drawClef();
-                this.drawMeasureBars(); // ✅ NOUVEAU: Barres de mesure
+                this.drawMeasureBars();
                 this.drawGameNotes();
                 this.drawHitLine();
-                this.drawPlayedNote(); // NOUVEAU : Note jouée en temps réel
+                this.drawPlayedNote(); // Note jouée en temps réel
                 this.updateUI();
                 
             } catch (error) {
@@ -1101,22 +1105,64 @@
             
             for (const y of GAME_CONFIG.staffLineY) {
                 this.ctx.beginPath();
-                this.ctx.moveTo(80, y);
+                this.ctx.moveTo(120, y); // Commencer à x=120 (après la zone gauche)
                 this.ctx.lineTo(this.canvas.width, y);
                 this.ctx.stroke();
             }
         }
         
-        drawClef() {
+        drawLeftZone() {
+            // ✅ ZONE GAUCHE FIXE : Clé de fa + indicateurs
+            
+            // Fond légèrement différent pour la zone gauche
+            this.ctx.fillStyle = '#111111';
+            this.ctx.fillRect(0, 0, 120, this.canvas.height);
+            
+            // Bordure de séparation
+            this.ctx.strokeStyle = '#444444';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(120, 0);
+            this.ctx.lineTo(120, this.canvas.height);
+            this.ctx.stroke();
+            
+            // Clé de fa
             this.ctx.fillStyle = '#ffffff';
             this.ctx.font = 'bold 35px serif';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            this.ctx.fillText('𝄢', 40, 90); // Clé de fa
+            this.ctx.fillText('𝄢', 60, 90); // Centré dans la zone gauche
+            
+            // Indicateurs de jugement intégrés
+            this.drawJudgmentIndicators();
+        }
+        
+        drawJudgmentIndicators() {
+            // Zone pour les indicateurs de timing et justesse
+            this.ctx.font = 'bold 10px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillStyle = '#666666';
+            
+            // Indicateurs de timing
+            this.ctx.fillText('Timing', 60, 30);
+            this.ctx.fillText('🔴 Trop tôt', 60, 45);
+            this.ctx.fillText('🟢 Parfait', 60, 130);
+            this.ctx.fillText('🔴 Trop tard', 60, 145);
+            
+            // Indicateurs de justesse  
+            this.ctx.fillText('Justesse', 60, 165);
+            this.ctx.fillText('🔵 Trop haut', 30, 180);
+            this.ctx.fillText('🔵 Trop bas', 90, 180);
         }
         
         drawMeasureBars() {
             if (!this.measures || this.measures.length === 0) return;
+            
+            // ✅ CLIPPING: Limiter les barres de mesure à la zone droite
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.rect(120, 0, this.canvas.width - 120, this.canvas.height);
+            this.ctx.clip();
             
             // ✅ SYNCHRONISATION: Même calcul que les notes
             const currentGameTime = this.isPlaying ? this.currentTime : 0;
@@ -1139,8 +1185,8 @@
                 // ✅ CORRECTION: Même formule que updateGameNotes()
                 const measureX = (this.canvas.width + 200) + (timeInSeconds * GAME_CONFIG.scrollSpeed) - (currentGameTime * GAME_CONFIG.scrollSpeed);
                 
-                // Ne dessiner que les barres visibles (même limite que les notes)
-                if (measureX < 80 || measureX > this.canvas.width + 50) continue;
+                // Ne dessiner que les barres visibles dans la zone droite
+                if (measureX < 120 || measureX > this.canvas.width + 50) continue;
                 
                 // Dessiner la barre verticale
                 this.ctx.beginPath();
@@ -1151,6 +1197,9 @@
                 // Dessiner le numéro de mesure au-dessus
                 this.ctx.fillText(measure.number.toString(), measureX, 35);
             }
+            
+            // ✅ RESTAURER: Retirer le clipping
+            this.ctx.restore();
         }
         
         drawGameNotes() {
@@ -1161,9 +1210,15 @@
                 return;
             }
             
+            // ✅ CLIPPING: Limiter le rendu des notes à la zone droite (x ≥ 120)
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.rect(120, 0, this.canvas.width - 120, this.canvas.height);
+            this.ctx.clip();
+            
             for (const note of this.gameNotes) {
-                // ✅ FIX CLIPPING: Arrêter de dessiner les notes avant qu'elles atteignent la clé de fa (x=80)
-                if (note.x + note.width < 80 || note.x > this.canvas.width + 50) continue;
+                // Vérifier si la note est visible dans la zone droite
+                if (note.x + note.width < 120 || note.x > this.canvas.width + 50) continue;
                 visibleCount++;
                 
                 let color = '#4CAF50';  // Vert pour les notes à venir
@@ -1239,6 +1294,9 @@
                 this.drawLedgerLines(note, strokeColor);
             }
             
+            // ✅ RESTAURER: Retirer le clipping
+            this.ctx.restore();
+            
             // Debug: afficher le nombre de notes visibles
             if (this.isPlaying && visibleCount === 0) {
                 console.warn(`⚠️ Aucune note visible ! Total notes: ${this.gameNotes.length}, temps: ${this.currentTime.toFixed(2)}s`);
@@ -1278,12 +1336,15 @@
         }
         
         drawHitLine() {
+            // ✅ AJUSTER: Ligne de jeu dans la zone droite 
+            const hitLineX = GAME_CONFIG.hitLineX; // Utiliser la config (180px)
+            
             this.ctx.strokeStyle = '#FF5722';
             this.ctx.lineWidth = 4;
             this.ctx.setLineDash([12, 6]);
             this.ctx.beginPath();
-            this.ctx.moveTo(GAME_CONFIG.hitLineX, 20);
-            this.ctx.lineTo(GAME_CONFIG.hitLineX, 160);
+            this.ctx.moveTo(hitLineX, 20);
+            this.ctx.lineTo(hitLineX, 160);
             this.ctx.stroke();
             this.ctx.setLineDash([]);
             
@@ -1291,7 +1352,7 @@
             this.ctx.fillStyle = '#FF5722';
             this.ctx.font = 'bold 12px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText('♪ Jouez ici ♪', GAME_CONFIG.hitLineX, 15);
+            this.ctx.fillText('♪ Jouez ici ♪', hitLineX, 15);
         }
         
         drawPlayedNote() {
@@ -1313,8 +1374,8 @@
                 noteY = 130 - (semitonesFromC3 * 10); // 10 pixels par demi-ton
             }
             
-            // Position X = ligne de jeu
-            const noteX = GAME_CONFIG.hitLineX;
+            // Position X = ligne de jeu (nouvelle position)
+            const noteX = GAME_CONFIG.hitLineX; // 180px
             
             // Couleur spéciale pour la note jouée (jaune/orange brillant)
             const playedColor = '#FFC107'; // Jaune ambré
