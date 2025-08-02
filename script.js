@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('🎻 CELLO RHYTHM GAME v2.6.0 - ZONES SÉPARÉES (Clé de fa protégée par clipping)');
+    console.log('🎻 CELLO RHYTHM GAME v2.6.1 - TIMING CORRIGÉ (Basé sur l\'arrivée des notes)');
     
     // ═══ DONNÉES INTÉGRÉES ═══
     const NOTE_FREQUENCIES = {
@@ -102,7 +102,7 @@
     
     class CelloRhythmGame {
         constructor() {
-            console.log('🎻 Creating COMPLETE game v2.6.0 (Zones séparées avec clipping)...');
+            console.log('🎻 Creating COMPLETE game v2.6.1 (Timing corrigé - arrivée des notes)...');
             
             // Variables de base
             this.microphoneActive = false;
@@ -145,7 +145,7 @@
             // Démarrer l'animation
             this.animate();
             
-            console.log('✅ COMPLETE game created v2.6.0 (Zones séparées avec clipping)');
+            console.log('✅ COMPLETE game created v2.6.1 (Timing corrigé - arrivée des notes)');
         }
         
         initializeElements() {
@@ -579,9 +579,9 @@
             for (const note of this.gameNotes) {
                 if (note.played || note.missed) continue;
                 
-                // ✅ TIMING: Calculer par rapport au DÉBUT de la note
-                const noteStartTime = note.startTimeInSeconds;
-                const timingDifference = currentTime - noteStartTime;
+                // ✅ TIMING: Calculer par rapport au moment d'ARRIVÉE à la ligne de jeu
+                const noteArrivalTime = note.timeAtHitLine;
+                const timingDifference = currentTime - noteArrivalTime;
                 
                 // ✅ VÉRIFIER SI ON EST DANS LA FENÊTRE DE DÉTECTION
                 if (Math.abs(timingDifference) <= timeDelta) {
@@ -675,7 +675,7 @@
                         this.showJudgment(finalJudgment); // Pour l'ancien système aussi
                         this.updateUI();
                         
-                        console.log(`🎯 Note ${note.note}: ${finalJudgment} (timing: ${timingDifference.toFixed(2)}s, justesse: ${centsDifference.toFixed(0)} cents, points: +${points})`);
+                        console.log(`🎯 Note ${note.note}: ${finalJudgment} (timing vs arrivée: ${timingDifference.toFixed(2)}s, justesse: ${centsDifference.toFixed(0)} cents, points: +${points})`);
                         break;
                     } else {
                         // ✅ MAUVAISE NOTE DÉTECTÉE dans la fenêtre
@@ -777,7 +777,7 @@
         }
         
         showDebugInfo() {
-            console.log('🔧 DEBUG INFO v2.6.0 - ZONES SÉPARÉES (Clé de fa protégée par clipping):');
+            console.log('🔧 DEBUG INFO v2.6.1 - TIMING CORRIGÉ (Basé sur l\'arrivée réelle à la ligne de jeu):');
             console.log(`Microphone: ${this.microphoneActive ? 'Actif' : 'Inactif'}`);
             console.log(`Détection: ${this.pitchDetectionActive ? 'Active (YIN Graves+)' : 'Inactive'}`);
             console.log(`Jeu: ${this.isPlaying ? 'En cours' : 'Arrêté'}`);
@@ -844,10 +844,30 @@
             
             console.log(`Volume: ${this.currentVolume} dB`);
             console.log(`Notes actives: ${this.gameNotes.filter(n => !n.played && !n.missed).length}`);
-            console.log(`✅ ARCHITECTURE: Zone gauche (0-120px) fixe + Zone droite (120px+) avec clipping`);
-            console.log(`✅ Ligne de jeu: x=${GAME_CONFIG.hitLineX}px dans la zone droite`);
+            console.log(`🎯 ARCHITECTURE COMPLÈTE v2.6.1:`);
+            console.log(`  Zone gauche (0-120px): Clé de fa + jugements dynamiques`);
+            console.log(`  Zone droite (120px+): Portée + notes avec clipping`);
+            console.log(`  Ligne de jeu: x=${GAME_CONFIG.hitLineX}px`);
+            console.log(`  Delta timing: ${(24/GAME_CONFIG.tempo).toFixed(1)}s pour tempo ${GAME_CONFIG.tempo}`);
+            console.log(`  ✅ TIMING CORRIGÉ: Basé sur l'arrivée réelle des notes à la ligne de jeu`);
+            console.log(`  Plages de timing (après arrivée à la ligne):`);
+            console.log(`    -${(24/GAME_CONFIG.tempo).toFixed(1)}s à -${(12/GAME_CONFIG.tempo).toFixed(1)}s : Trop tôt`);
+            console.log(`    -${(12/GAME_CONFIG.tempo).toFixed(1)}s à -${(6/GAME_CONFIG.tempo).toFixed(1)}s : OK`);
+            console.log(`    -${(6/GAME_CONFIG.tempo).toFixed(1)}s à +${(6/GAME_CONFIG.tempo).toFixed(1)}s : PARFAIT`);
+            console.log(`    +${(6/GAME_CONFIG.tempo).toFixed(1)}s à +${(12/GAME_CONFIG.tempo).toFixed(1)}s : OK`);
+            console.log(`    +${(12/GAME_CONFIG.tempo).toFixed(1)}s à +${(24/GAME_CONFIG.tempo).toFixed(1)}s : Trop tard`);
             
-            this.debugStatusElement.textContent = 'Debug v2.6.0 (Zones séparées) affiché en console (F12)';
+            // Debug des premières notes avec leurs temps d'arrivée
+            if (this.gameNotes.length > 0) {
+                console.log(`📋 TIMING DES PREMIÈRES NOTES:`);
+                for (let i = 0; i < Math.min(5, this.gameNotes.length); i++) {
+                    const note = this.gameNotes[i];
+                    const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
+                    console.log(`  ${note.note} (${noteType}): morceau=${note.startTimeInSeconds.toFixed(1)}s → arrivée ligne=${note.timeAtHitLine.toFixed(1)}s`);
+                }
+            }
+            
+            this.debugStatusElement.textContent = 'Debug v2.6.1 (Timing corrigé) affiché en console (F12)';
         }
         
         setupCanvas() {
@@ -1087,6 +1107,9 @@
                 // ✅ LARGEUR CORRECTE: Proportionnelle à la durée en secondes
                 const noteWidth = durationInSeconds * GAME_CONFIG.scrollSpeed;
                 
+                // ✅ NOUVEAU: Calculer le moment où la note arrive à la ligne de jeu
+                const timeAtHitLine = startTimeInSeconds + (this.canvas.width + 200 - GAME_CONFIG.hitLineX) / GAME_CONFIG.scrollSpeed;
+                
                 return {
                     ...noteData,
                     x: startX, // ✅ FIX: Position où la note COMMENCE (pas le centre)
@@ -1094,23 +1117,24 @@
                     width: Math.max(noteWidth, 15), // Largeur minimum de 15px
                     durationInSeconds: durationInSeconds, // Stocker pour debug
                     startTimeInSeconds: startTimeInSeconds, // Temps de départ en secondes
+                    timeAtHitLine: timeAtHitLine, // ✅ NOUVEAU: Moment où la note arrive à la ligne de jeu
                     played: false,
                     missed: false,
                     id: index
                 };
             });
             
-            console.log(`✅ ${this.gameNotes.length} notes d'Ave Maria initialisées avec alignement au début (60 BPM)`);
+            console.log(`✅ ${this.gameNotes.length} notes d'Ave Maria initialisées avec timing précis (60 BPM)`);
             console.log(`✅ ${this.measures.length} mesures initialisées`);
             
             // Afficher quelques exemples dans la console
             if (this.gameNotes.length > 0) {
-                console.log('📋 Exemples de notes avec alignement au début (60 BPM):');
+                console.log('📋 Exemples de notes avec timing d\'arrivée (60 BPM):');
                 for (let i = 0; i < Math.min(5, this.gameNotes.length); i++) {
                     const note = this.gameNotes[i];
                     const measureInfo = note.measureNumber ? ` (mesure ${note.measureNumber})` : '';
                     const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
-                    console.log(`  ${note.note}: ${noteType} (${note.durationInSeconds}s), début=${Math.round(note.x)}px, largeur=${Math.round(note.width)}px${measureInfo}`);
+                    console.log(`  ${note.note}: ${noteType}, morceau=${note.startTimeInSeconds.toFixed(1)}s, arrivée=${note.timeAtHitLine.toFixed(1)}s${measureInfo}`);
                 }
             }
         }
@@ -1183,12 +1207,12 @@
             for (const note of this.gameNotes) {
                 if (note.played || note.missed) continue;
                 
-                // ✅ NOTE RATÉE: Quand on dépasse la fenêtre de timing
-                const noteStartTime = note.startTimeInSeconds;
-                const timingDifference = currentTime - noteStartTime;
+                // ✅ NOTE RATÉE: Quand on dépasse la fenêtre de timing APRÈS l'arrivée à la ligne de jeu
+                const noteArrivalTime = note.timeAtHitLine;
+                const timingDifference = currentTime - noteArrivalTime;
                 
                 if (timingDifference > timeDelta) {
-                    // Note ratée car pas jouée dans la fenêtre de temps
+                    // Note ratée car pas jouée dans la fenêtre de temps après son arrivée
                     note.missed = true;
                     this.combo = 0;
                     
@@ -1196,7 +1220,7 @@
                     this.setJudgment('timing_error', 'Note ratée', `+${timingDifference.toFixed(2)}s trop tard`);
                     
                     const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
-                    console.log(`❌ Note ratée: ${note.note} (${noteType}, ${note.durationInSeconds}s) - ${timingDifference.toFixed(2)}s de retard`);
+                    console.log(`❌ Note ratée: ${note.note} (${noteType}) - arrivée à ${noteArrivalTime.toFixed(1)}s, ratée à ${currentTime.toFixed(1)}s (+${timingDifference.toFixed(2)}s)`);
                 }
             }
         }
