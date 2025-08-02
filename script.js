@@ -121,6 +121,11 @@
             this.gameNotes = [];
             this.measures = []; // ✅ NOUVEAU: Array des mesures
             
+            // ✅ NOUVEAU: Système de jugement dynamique
+            this.currentJudgment = null;
+            this.judgmentTime = 0;
+            this.judgmentDuration = 1500; // Durée d'affichage en ms
+            
             // Variables audio avec stabilisation SIMPLE
             this.currentVolume = 0;
             this.lastDetectedFreq = 0;
@@ -553,44 +558,129 @@
             return null;
         }
         
+        setJudgment(type, text, details = null) {
+            // ✅ NOUVEAU: Définir un jugement dynamique
+            this.currentJudgment = {
+                type: type,      // 'perfect', 'ok', 'timing_error', 'pitch_error'
+                text: text,      // Texte principal à afficher
+                details: details // Détails optionnels (ex: "-0.15s")
+            };
+            this.judgmentTime = Date.now();
+            
+            console.log(`🎯 Jugement: ${text} (${type})${details ? ' - ' + details : ''}`);
+        }
+        
         checkNoteMatch(detectedNote, frequency) {
             const currentTime = (Date.now() - this.startTime) / 1000;
+            
+            // ✅ CALCUL DELTA BASÉ SUR LE TEMPO
+            const timeDelta = 24 / GAME_CONFIG.tempo; // Pour tempo 60: 0.4s
             
             for (const note of this.gameNotes) {
                 if (note.played || note.missed) continue;
                 
-                const noteTime = note.startTime;
-                const timeDifference = Math.abs(currentTime - noteTime);
+                // ✅ TIMING: Calculer par rapport au DÉBUT de la note
+                const noteStartTime = note.startTimeInSeconds;
+                const timingDifference = currentTime - noteStartTime;
                 
-                if (timeDifference <= GAME_CONFIG.judgmentWindow / 1000) {
+                // ✅ VÉRIFIER SI ON EST DANS LA FENÊTRE DE DÉTECTION
+                if (Math.abs(timingDifference) <= timeDelta) {
+                    
+                    // ✅ VÉRIFIER SI C'EST LA BONNE NOTE (hauteur)
                     if (detectedNote === note.note) {
+                        // Bonne note ! Maintenant analyser timing et justesse
                         const expectedFreq = NOTE_FREQUENCIES[note.note];
                         const centsDifference = Math.abs(getCentsDifference(expectedFreq, frequency));
                         
                         note.played = true;
                         
-                        let judgment = 'miss';
-                        let points = 0;
+                        // ✅ ANALYSE DU TIMING (basé sur le delta)
+                        let timingJudgment = '';
+                        let isTimingPerfect = false;
+                        let isTimingOk = false;
+                        
+                        const absTiming = Math.abs(timingDifference);
+                        const quarterDelta = timeDelta / 4; // 0.1s pour tempo 60
+                        const halfDelta = timeDelta / 2;    // 0.2s pour tempo 60
+                        
+                        if (absTiming <= quarterDelta) {
+                            // ±0.1s : Parfait
+                            timingJudgment = 'PARFAIT !';
+                            isTimingPerfect = true;
+                        } else if (absTiming <= halfDelta) {
+                            // ±0.1s à ±0.2s : Ok
+                            timingJudgment = 'OK';
+                            isTimingOk = true;
+                        } else {
+                            // ±0.2s à ±0.4s : Trop tôt/tard
+                            timingJudgment = timingDifference < 0 ? 'Trop tôt' : 'Trop tard';
+                        }
+                        
+                        // ✅ ANALYSE DE LA JUSTESSE
+                        let pitchJudgment = '';
+                        let isPitchPerfect = false;
+                        let isPitchOk = false;
                         
                         if (centsDifference <= GAME_CONFIG.perfectThreshold) {
-                            judgment = 'perfect';
+                            pitchJudgment = 'Juste !';
+                            isPitchPerfect = true;
+                        } else if (centsDifference <= GAME_CONFIG.okThreshold) {
+                            pitchJudgment = 'Proche';
+                            isPitchOk = true;
+                        } else {
+                            pitchJudgment = 'Faux';
+                        }
+                        
+                        // ✅ JUGEMENT FINAL ET AFFICHAGE
+                        let finalJudgment = 'miss';
+                        let points = 0;
+                        let judgmentType = '';
+                        let judgmentText = '';
+                        let judgmentDetails = '';
+                        
+                        if (isTimingPerfect && isPitchPerfect) {
+                            // Parfait sur les deux aspects
+                            finalJudgment = 'perfect';
+                            judgmentType = 'perfect';
+                            judgmentText = 'PARFAIT !';
+                            judgmentDetails = `${timingDifference >= 0 ? '+' : ''}${timingDifference.toFixed(2)}s, ${centsDifference.toFixed(0)} cents`;
                             points = 100 + (this.combo * 10);
                             this.combo++;
-                        } else if (centsDifference <= GAME_CONFIG.okThreshold) {
-                            judgment = 'ok';
+                        } else if ((isTimingPerfect || isTimingOk) && (isPitchPerfect || isPitchOk)) {
+                            // Au moins OK sur les deux aspects
+                            finalJudgment = 'ok';
+                            judgmentType = 'ok';
+                            judgmentText = 'OK';
+                            judgmentDetails = `${timingJudgment}, ${pitchJudgment}`;
                             points = 50 + (this.combo * 5);
                             this.combo++;
+                        } else if (!isTimingPerfect && !isTimingOk) {
+                            // Problème de timing
+                            finalJudgment = 'miss';
+                            judgmentType = 'timing_error';
+                            judgmentText = timingJudgment;
+                            judgmentDetails = `${timingDifference >= 0 ? '+' : ''}${timingDifference.toFixed(2)}s`;
+                            this.combo = 0;
                         } else {
-                            judgment = 'miss';
+                            // Problème de justesse
+                            finalJudgment = 'miss';
+                            judgmentType = 'pitch_error';
+                            judgmentText = 'Fausse note';
+                            judgmentDetails = `${centsDifference.toFixed(0)} cents d'écart`;
                             this.combo = 0;
                         }
                         
                         this.score += points;
-                        this.showJudgment(judgment);
+                        this.setJudgment(judgmentType, judgmentText, judgmentDetails);
+                        this.showJudgment(finalJudgment); // Pour l'ancien système aussi
                         this.updateUI();
                         
-                        console.log(`🎯 Note jouée: ${detectedNote}, jugement: ${judgment}, points: +${points}`);
+                        console.log(`🎯 Note ${note.note}: ${finalJudgment} (timing: ${timingDifference.toFixed(2)}s, justesse: ${centsDifference.toFixed(0)} cents, points: +${points})`);
                         break;
+                    } else {
+                        // ✅ MAUVAISE NOTE DÉTECTÉE dans la fenêtre
+                        // Afficher l'erreur sans marquer la note comme jouée
+                        this.setJudgment('pitch_error', 'Fausse note', `${detectedNote} au lieu de ${note.note}`);
                     }
                 }
             }
@@ -1086,15 +1176,27 @@
         }
         
         checkMissedNotes() {
+            // ✅ CALCUL DELTA BASÉ SUR LE TEMPO
+            const timeDelta = 24 / GAME_CONFIG.tempo; // Pour tempo 60: 0.4s
+            const currentTime = (Date.now() - this.startTime) / 1000;
+            
             for (const note of this.gameNotes) {
-                // ✅ CORRECTION ALIGNEMENT: Une note est ratée quand sa fin (x + width) dépasse la ligne de jeu
-                // ✅ FIX CLIPPING: Utiliser la même limite que pour l'affichage (x=80)
-                const noteEnd = note.x + note.width;
-                if (!note.played && !note.missed && noteEnd < GAME_CONFIG.hitLineX - 10) {
+                if (note.played || note.missed) continue;
+                
+                // ✅ NOTE RATÉE: Quand on dépasse la fenêtre de timing
+                const noteStartTime = note.startTimeInSeconds;
+                const timingDifference = currentTime - noteStartTime;
+                
+                if (timingDifference > timeDelta) {
+                    // Note ratée car pas jouée dans la fenêtre de temps
                     note.missed = true;
                     this.combo = 0;
+                    
+                    // Afficher le jugement de note ratée
+                    this.setJudgment('timing_error', 'Note ratée', `+${timingDifference.toFixed(2)}s trop tard`);
+                    
                     const noteType = note.duration === 8 ? 'RONDE' : note.duration === 4 ? 'BLANCHE' : note.duration === 2 ? 'NOIRE' : 'AUTRE';
-                    console.log(`❌ Note ratée: ${note.note} (${noteType}, ${note.durationInSeconds}s)`);
+                    console.log(`❌ Note ratée: ${note.note} (${noteType}, ${note.durationInSeconds}s) - ${timingDifference.toFixed(2)}s de retard`);
                 }
             }
         }
@@ -1138,21 +1240,71 @@
         }
         
         drawJudgmentIndicators() {
-            // Zone pour les indicateurs de timing et justesse
-            this.ctx.font = 'bold 10px Arial';
+            // ✅ AFFICHAGE DYNAMIQUE : Seulement si un jugement est actif
+            if (!this.currentJudgment) return;
+            
+            // Vérifier si le jugement doit encore être affiché
+            const timeSinceJudgment = Date.now() - this.judgmentTime;
+            if (timeSinceJudgment > this.judgmentDuration) {
+                this.currentJudgment = null;
+                return;
+            }
+            
+            // Calculer l'opacité (fade out progressif)
+            const opacity = Math.max(0, 1 - (timeSinceJudgment / this.judgmentDuration));
+            
+            // Couleurs selon le type de jugement
+            let color = '#FFFFFF';
+            let bgColor = '#000000';
+            
+            switch (this.currentJudgment.type) {
+                case 'perfect':
+                    color = '#FFFF00'; // Jaune fluo
+                    bgColor = '#333300';
+                    break;
+                case 'ok':
+                    color = '#00FF00'; // Vert
+                    bgColor = '#003300';
+                    break;
+                case 'timing_error':
+                    color = '#FF8800'; // Orange
+                    bgColor = '#332200';
+                    break;
+                case 'pitch_error':
+                    color = '#FF0000'; // Rouge
+                    bgColor = '#330000';
+                    break;
+                default:
+                    color = '#CCCCCC';
+                    bgColor = '#222222';
+            }
+            
+            // Appliquer l'opacité
+            const hexOpacity = Math.round(opacity * 255).toString(16).padStart(2, '0');
+            color += hexOpacity;
+            bgColor += hexOpacity;
+            
+            // Dessiner le fond du jugement
+            this.ctx.fillStyle = bgColor;
+            this.ctx.fillRect(10, 120, 100, 50);
+            
+            // Bordure
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(10, 120, 100, 50);
+            
+            // Texte principal
+            this.ctx.fillStyle = color;
+            this.ctx.font = 'bold 14px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillStyle = '#666666';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(this.currentJudgment.text, 60, 135);
             
-            // Indicateurs de timing
-            this.ctx.fillText('Timing', 60, 30);
-            this.ctx.fillText('🔴 Trop tôt', 60, 45);
-            this.ctx.fillText('🟢 Parfait', 60, 130);
-            this.ctx.fillText('🔴 Trop tard', 60, 145);
-            
-            // Indicateurs de justesse  
-            this.ctx.fillText('Justesse', 60, 165);
-            this.ctx.fillText('🔵 Trop haut', 30, 180);
-            this.ctx.fillText('🔵 Trop bas', 90, 180);
+            // Détails supplémentaires (timing/pitch)
+            if (this.currentJudgment.details) {
+                this.ctx.font = '10px Arial';
+                this.ctx.fillText(this.currentJudgment.details, 60, 155);
+            }
         }
         
         drawMeasureBars() {
